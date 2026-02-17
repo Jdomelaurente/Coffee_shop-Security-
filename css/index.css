@@ -1,0 +1,60 @@
+/* index.css */
+body {
+    background: url(../image/background.jpg) no-repeat;
+    background-position: center;
+    background-size: cover;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+    text-decoration: none;
+}
+
+html {
+    font-size: 62.5%;
+    overflow-x: hidden;
+    scroll-padding-top: 7rem;
+    scroll-behavior: smooth;
+}
+
+section {
+    padding: 2rem 9%;
+}
+
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 1000;
+    background: #6C4E31;
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .1);
+    padding: 2rem 9%;
+}
+
+.header .logo {
+    color: var(--main-color);
+    font-size: 2.3rem;
+}
+
+.header .navbar a {
+    margin: 0 1rem;
+    font-size: 1.7rem;
+    color: var(--main-color);
+}
+
+/* Other styles related to the homepage can be added here */
+
+.home {
+    padding-top: 8rem;
+    background: url(../image/background.jpg) no-repeat;
+    background-position: center;
+    background-size: cover;
+}
+
+/* More styles specific to the home page */

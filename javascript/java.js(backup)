@@ -1,0 +1,486 @@
+
+// Show password functionality for the first password field
+const showPassword1 = document.getElementById('showPassword1');
+const passwordField1 = document.getElementById('password1');
+
+showPassword1.addEventListener('change', function() {
+    passwordField1.type = this.checked ? 'text' : 'password';
+});
+
+// Show password functionality for the second password field
+const showPassword2 = document.getElementById('showPassword2');
+const passwordField2 = document.getElementById('password2');
+
+showPassword2.addEventListener('change', function() {
+    passwordField2.type = this.checked ? 'text' : 'password';
+});
+
+// Password strength checker
+document.addEventListener('DOMContentLoaded', function() {
+    const pass = document.getElementById("password1");
+    const msg = document.getElementById("message");
+    const str = document.getElementById("strength");
+
+    pass.addEventListener('input', () => {
+        const password = pass.value;
+        
+        const hasNumbers = /\d/.test(password);
+        const hasLetters = /[a-zA-Z]/.test(password);
+        const hasSpecialChars = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+        msg.style.display = password.length > 0 ? "block" : "none";
+
+        let strength = "Weak Password";
+        let color = "red";
+
+        if (password.length >= 8 && hasLetters && hasNumbers && hasSpecialChars) {
+            strength = "Strong Password";
+            color = "green";
+        } else if (password.length >= 4 && (hasLetters || hasNumbers)) {
+            strength = "Medium Password";
+            color = "orange";
+        }
+
+        str.innerHTML = strength;
+        str.style.color = color;
+    });
+});
+
+// Form validations
+const form = document.getElementById('form');
+const id_number = document.getElementById('id_number');
+const firstName = document.getElementById('firstName');
+const lastName = document.getElementById('lastName');
+const middleName = document.getElementById('middleName');
+const extensionName = document.getElementById('extensionName');
+const sex = document.getElementById('sex');
+const contact = document.getElementById('contact');
+const email = document.getElementById('email');
+const password1 = document.getElementById('password1');
+const password2 = document.getElementById('password2');
+const purok = document.getElementById('purok');
+const barangay = document.getElementById('barangay');
+const cityMunicipality = document.getElementById('cityMunicipality');
+const province = document.getElementById('province');
+const country = document.getElementById('country');
+const zipCode = document.getElementById('zipCode');
+const age = document.getElementById('age');
+const dob = document.getElementById('dob');
+
+document.getElementById('submit').addEventListener('click', (event) => {
+    if (!validateInputs()) {
+        event.preventDefault();  // Prevent form submission if validation fails
+    } else {
+        form.submit();  // Manually submit the form if validation passes
+    }
+});
+
+const setError = (element, message) => {
+    const inputControl = element.parentElement;
+    const errorDisplay = inputControl.querySelector('.error');
+
+    errorDisplay.innerText = message;
+    inputControl.classList.add('error');
+    inputControl.classList.remove('success');
+};
+
+const setSuccess = element => {
+    const inputControl = element.parentElement;
+    const errorDisplay = inputControl.querySelector('.error');
+
+    errorDisplay.innerText = '';
+    inputControl.classList.add('success');
+    inputControl.classList.remove('error');
+};
+
+const validateInputs = () => {
+
+    const capitalizeWords = (str) => {
+        return str
+            .toLowerCase() // Normalize to lowercase
+            .replace(/\b\w/g, char => char.toUpperCase()) // Capitalize first letter
+            .replace(/\s{2,}/g, ' '); // Remove extra spaces
+    };
+
+    const id_numberValue = id_number.value.trim();
+    const firstNameValue = capitalizeWords(firstName.value.trim());
+    const lastNameValue = capitalizeWords(lastName.value.trim());
+    const middleNameValue = capitalizeWords(middleName.value.trim());
+    const extensionNameValue = extensionName.value.trim();
+    const sexValue = sex.value.trim();
+    const contactValue = capitalizeWords(contact.value.trim());
+    const emailValue = email.value.trim();
+    const password1Value = password1.value.trim();
+    const password2Value = password2.value.trim();
+    const purokValue = purok.value.trim();
+    const barangayValue = capitalizeWords(barangay.value.trim());
+    const cityMunicipalityValue = capitalizeWords(cityMunicipality.value.trim());
+    const provinceValue = capitalizeWords(province.value.trim());
+    const countryValue = capitalizeWords(country.value.trim());
+    const zipCodeValue = zipCode.value.trim();
+    const dobValue = dob.value.trim();
+
+    let isValid = true; 
+
+    // Id_Number Validation
+    if (id_numberValue === '') {
+        setError(id_number, 'ID is required');
+        isValid = false;
+    }else if  (id_numberValue.length !== 9) {
+        setError(id_number, 'ID must be exactly 9 characters');
+        isValid = false;
+    }else if (!/^\d+-\d+$/.test(id_numberValue)) {
+        setError(id_number, 'ID must only contain numbers and dash');
+        isValid = false;  
+    } else if (!/[-]/.test(id_numberValue)) {
+        setError(id_number, 'ID must contain at least one dash (-)');
+        isValid = false;  
+    } else if (/(\.\.|__|--)/.test(id_numberValue)) {
+        setError(id_number, 'ID cannot have consecutive special characters.');
+        isValid = false;
+    } else if (/^[_.-]/.test(id_numberValue) || /[_.-]$/.test(id_numberValue)) {
+        setError(id_number, 'ID cannot start or end with a special character');
+        isValid = false;
+    } else if (/\s{2}/.test(id_numberValue)) {
+        setError(id_number, 'ID cannot contain double spaces');
+        isValid = false;
+    }else {
+        setSuccess(id_number);
+    }
+
+    // First Name Validation
+    if (firstNameValue === '') {
+        setError(firstName, 'First Name is required');
+        isValid = false;
+    } else if (firstNameValue.length < 2 || firstNameValue.length > 20) {
+        setError(firstName, 'First Name must be between 2 and 20 characters');
+        isValid = false;
+    } else if (/^[A-Z\s]+$/.test(firstNameValue)) { // Check for all capital letters
+        setError(firstName, 'First Name cannot be all capital letters');
+        isValid = false;
+    }else if (/^[_.-]/.test(firstNameValue) || /[_.-]$/.test(firstNameValue)) {
+        setError(firstName, 'firstName cannot start or end with a special character');
+        isValid = false;
+    } else if (!/^[A-Za-z\s]+$/.test(firstNameValue)) {
+        setError(firstName, 'First Name must contain only letters');
+        isValid = false;
+    } else if (/(.)\1{2}/.test(firstNameValue)) {
+        setError(firstName, 'Consecutive identical letters are not allowed');
+        isValid = false;
+    } else {
+        firstName.value = firstNameValue;
+        setSuccess(firstName);
+    }
+
+    // Last Name Validation
+    if (lastNameValue === '') {
+        setError(lastName, 'Last Name is required');
+        isValid = false;
+    } else if (lastNameValue.length < 2 || lastNameValue.length > 15) {
+        setError(lastName, 'Last Name must be between 2 and 15 characters');
+        isValid = false;
+    } else if (/^[A-Z\s]+$/.test(lastNameValue)) { // Check for all capital letters
+        setError(lastName, 'Last Name cannot be all capital letters');
+        isValid = false;
+    } else if (!/^[A-Za-z\s]+$/.test(lastNameValue)) {
+        setError(lastName, 'Last Name must contain only letters');
+        isValid = false;
+    } else if (/(.)\1{2}/.test(lastNameValue)) {
+        setError(lastName, 'Three consecutive identical letters are not allowed');
+        isValid = false;
+    } else {
+        lastName.value = lastNameValue;
+        setSuccess(lastName);
+    }
+
+    // Middle Name Validation
+    if (middleNameValue !== '' && (middleNameValue.length <= 1 || middleNameValue.length >= 15)) {
+        setError(middleName, 'Middle Name must be between 1 and 15 characters');
+        isValid = false;
+    } else if (/^[A-Z\s]+$/.test(middleNameValue)) { // Check for all capital letters
+        setError(middleName, 'Middle Name cannot be all capital letters');
+        isValid = false;
+    } else if (middleNameValue !== '' && !/^[A-Za-z\s]+$/.test(middleNameValue)) {
+        setError(middleName, 'Middle Name must contain only letters');
+        isValid = false;
+    } else if (middleNameValue !== '' && /(.)\1{2}/.test(middleNameValue)) {
+        setError(middleName, 'Consecutive identical letters are not allowed');
+        isValid = false;
+    } else {
+        middleName.value = middleNameValue;
+        setSuccess(middleName);
+    }
+
+    // Extension name Validation
+    if (extensionNameValue !== '') {
+        const capitalizedValue = extensionNameValue
+            .toLowerCase()
+            .replace(/^(jr|sr)$/i, (match) => match.charAt(0).toUpperCase() + match.slice(1)) 
+            .replace(/^[ivxlcdm]+$/, (match) => match.toUpperCase()); 
+        extensionName.value = capitalizedValue;
+
+        if (capitalizedValue.length < 1 || capitalizedValue.length > 3) {
+            setError(extensionName, 'Extension Name must be between 1 and 3 characters');
+            isValid = false;
+        }
+        else if (/^(Jr|Sr)$/.test(capitalizedValue)) {
+            setSuccess(extensionName);
+        }
+        else if (/^[IVXLCDM]+$/.test(capitalizedValue)) {
+            setSuccess(extensionName); 
+        }
+        else {
+            setError(extensionName, 'Extension Name must be "Jr", "Sr", or a valid Roman numeral in uppercase (e.g., I, IV, X)');
+            isValid = false;
+        }
+    } else {
+        setSuccess(extensionName);
+    }
+
+
+    // Sex Validation
+    if (sexValue === '') {
+        setError(sex, 'Sex is required');
+        isValid = false;
+    } else {
+        setSuccess(sex);
+    }
+
+    // contact Validation
+    if (contactValue === '') {
+        setError(contact, 'Contact is required');
+        isValid = false;
+    } else if (!/^\d+$/.test(contactValue)) {
+        // Check if the contact value contains only digits
+        setError(contact, 'Contact must contain only numbers');
+        isValid = false;
+    } else if (contactValue.length !== 11) {
+        setError(contact, 'Contact must be exactly 11 characters');
+        isValid = false;
+    } else {
+        contact.value = contactValue;
+        setSuccess(contact);
+    }
+    
+    
+
+    // Email Validation
+    if (emailValue === '') {
+        setError(email, 'Email is required');
+        isValid = false;
+    } else if (!/^\S+@\S+\.\S+$/.test(emailValue)) {
+        setError(email, 'Email is not valid');
+        isValid = false;
+    } else {
+        setSuccess(email);
+    }
+
+    // Password Validation
+    if (password1Value === '') {
+        setError(password1, 'Password is required');
+        isValid = false;
+    } else if (password2Value === '') {
+        setError(password2, 'Confirm password is required');
+        isValid = false;
+    } else if (password1Value !== password2Value) {
+        setError(password2, 'Passwords do not match');
+        isValid = false;
+    } else {
+        setSuccess(password1);
+        setSuccess(password2);
+    }
+
+
+   // Purok Validation
+   if (purokValue !== '') {
+    const capitalizedValue = purokValue
+        .split(/\s+/) 
+        .filter(word => word.trim() !== '') 
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' '); 
+    if (!/^[A-Za-z0-9][A-Za-z0-9-]*(?: [A-Za-z0-9][A-Za-z0-9-]*)*$/.test(capitalizedValue)) {
+        if (/[^A-Za-z0-9 -]/.test(capitalizedValue)) {
+            setError(purok, 'Purok cannot contain other special characters, only dash');
+        } else if (/^-/.test(capitalizedValue)) {
+            setError(purok, 'Purok cannot start with a dash');
+        }
+        isValid = false;
+    } else if (purokValue.length < 1 || purokValue.length > 20) {
+        setError(purok, 'Purok must be between 1 and 20 characters');
+        isValid = false;
+    } else {
+        purok.value = capitalizedValue;
+        setSuccess(purok);
+    }
+} else {
+    setError(purok, 'Purok is required');
+    isValid = false;
+}
+
+
+    // barangay Validation
+    if (barangayValue !== '') {
+        const capitalizedValue = barangayValue
+            .split(/\s+/) // Split on one or more spaces
+            .filter(word => word.trim() !== '') // Remove extra empty strings from spaces
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' '); // Join with a single space
+        
+        // Check if the formatted value is valid
+        if (!/^[A-Za-z][A-Za-z0-9-]*(?: [A-Za-z][A-Za-z0-9-]*)*$/.test(capitalizedValue)) {
+            // Check if the value contains special characters other than dash
+            if (/[^A-Za-z0-9 -]/.test(capitalizedValue)) {
+                setError(barangay, 'barangay cannot contain other special characters only dash');
+            } else {
+                setError(barangay, 'barangay cannot start with a dash or number');
+            }
+            isValid = false;
+        } else if (barangayValue.length < 2 || barangayValue.length > 20) {
+            setError(barangay, 'barangay must be between 2 and 20 characters');
+            isValid = false;
+        } else {
+            barangay.value = capitalizedValue; // Apply the formatted value back to the field
+            setSuccess(barangay);
+        }
+    } else {
+        setError(barangay, 'barangay is required');
+        isValid = false;
+    }
+
+
+    // city/Municipality Validation
+    if (cityMunicipalityValue !== '') {
+        const capitalizedValue = cityMunicipalityValue
+            .split(/\s+/) // Split on one or more spaces
+            .filter(word => word.trim() !== '') // Remove extra empty strings from spaces
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' '); // Join with a single space
+        
+        // Check if the formatted value is valid
+        if (!/^[A-Za-z][A-Za-z0-9-]*(?: [A-Za-z][A-Za-z0-9-]*)*$/.test(capitalizedValue)) {
+            // Check if the value contains special characters other than dash
+            if (/[^A-Za-z0-9 -]/.test(capitalizedValue)) {
+                setError(cityMunicipality, 'city/Municipality cannot contain other special characters only dash');
+            } else {
+                setError(cityMunicipality, 'city/Municipality cannot start with a dash or number');
+            }
+            isValid = false;
+        } else if (cityMunicipalityValue.length < 2 || cityMunicipalityValue.length > 20) {
+            setError(cityMunicipality, 'city/Municipality must be between 2 and 20 characters');
+            isValid = false;
+        } else {
+            cityMunicipality.value = capitalizedValue; // Apply the formatted value back to the field
+            setSuccess(cityMunicipality);
+        }
+    } else {
+        setError(cityMunicipality, 'city/Municipality is required');
+        isValid = false;
+    }
+
+    // province Validation
+    if (provinceValue !== '') {
+        const capitalizedValue = provinceValue
+            .split(/\s+/) // Split on one or more spaces
+            .filter(word => word.trim() !== '') // Remove extra empty strings from spaces
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' '); // Join with a single space
+        
+        // Check if the formatted value is valid
+        if (!/^[A-Za-z][A-Za-z0-9-]*(?: [A-Za-z][A-Za-z0-9-]*)*$/.test(capitalizedValue)) {
+            // Check if the value contains special characters other than dash
+            if (/[^A-Za-z0-9 -]/.test(capitalizedValue)) {
+                setError(province,  'province cannot contain other special characters only dash');
+            } else {
+                setError(province, 'province cannot start with a dash or number');
+            }
+            isValid = false;
+        } else if (provinceValue.length < 2 || provinceValue.length > 20) {
+            setError(province, 'province must be between 2 and 20 characters');
+            isValid = false;
+        } else {
+            province.value = capitalizedValue; // Apply the formatted value back to the field
+            setSuccess(province);
+        }
+    } else {
+        setError(province, 'province is required');
+        isValid = false;
+    }
+
+    // country Validation
+    if (countryValue !== '') {
+        const capitalizedValue = countryValue
+            .split(/\s+/) // Split on one or more spaces
+            .filter(word => word.trim() !== '') // Remove extra empty strings from spaces
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' '); // Join with a single space
+        
+        // Check if the formatted value is valid
+        if (!/^[A-Za-z][A-Za-z0-9-]*(?: [A-Za-z][A-Za-z0-9-]*)*$/.test(capitalizedValue)) {
+            // Check if the value contains special characters other than dash
+            if (/[^A-Za-z0-9 -]/.test(capitalizedValue)) {
+                setError(country,  'country cannot contain other special characters only dash');
+            } else {
+                setError(country, 'country cannot start with a dash or number');
+            }
+            isValid = false;
+        } else if (countryValue.length < 2 || countryValue.length > 20) {
+            setError(country, 'country must be between 2 and 20 characters');
+            isValid = false;
+        } else {
+            country.value = capitalizedValue; // Apply the formatted value back to the field
+            setSuccess(country);
+        }
+    } else {
+        setError(country, 'country is required');
+        isValid = false;
+    }
+
+    // Zip Code Validation
+    if (zipCodeValue === '') {
+        setError(zipCode, 'Zip Code is required');
+        isValid = false;
+    } else if (!/^\d{4}$/.test(zipCodeValue)) {
+        setError(zipCode, 'Zip Code must be 4 digits and Only Numbers');
+        isValid = false;
+    } else {
+        setSuccess(zipCode);
+    }
+    
+
+    if (dobValue === '') {
+        setError(dob, 'Date of Birth     is required');
+        isValid = false;
+    } else {
+        setSuccess(dob);
+    }
+
+    return isValid;
+};
+function updateFromDOB() {
+    const dob = document.getElementById("dob").value;
+    const ageField = document.getElementById("age");
+    const dobError = document.getElementById("dobError");
+
+    if (dob) {
+        const dobDate = new Date(dob);
+        const today = new Date();
+        let age = today.getFullYear() - dobDate.getFullYear();
+        const monthDiff = today.getMonth() - dobDate.getMonth();
+
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobDate.getDate())) {
+            age--;
+        }
+
+        if (age >= 18) {
+            ageField.value = age;
+            dobError.textContent = "";
+        } else {
+            ageField.value = "";
+            dobError.textContent = "You must be 18 years old or above.";
+        }
+    } else {
+        ageField.value = "";
+        dobError.textContent = "";
+    }
+}
+
