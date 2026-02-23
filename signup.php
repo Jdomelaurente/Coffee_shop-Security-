@@ -145,13 +145,13 @@ INSERT INTO users (
     id_number, first_name, last_name, middle_name, extension_name,
     age, sex, contact, dob, email, password,
     purok, barangay, city_municipality, province, country, zip_code, 
-    question1, answer1, question2, answer2, question3, answer3
+    question1, answer1, question2, answer2, question3, answer3, role, status
 )
 VALUES (
     :id_number, :first_name, :last_name, :middle_name, :extension_name,
     :age, :sex, :contact, :dob, :email, :password,
     :purok, :barangay, :city_municipality, :province, :country, :zip_code, 
-    :q1, :a1, :q2, :a2, :q3, :a3
+    :q1, :a1, :q2, :a2, :q3, :a3, 'user', 'pending'
 )
 ";
 
@@ -185,7 +185,7 @@ try {
 
     echo json_encode([
         "status"  => "success",
-        "message" => "Account successfully created"
+        "message" => "Account successfully created! Please wait for the administrator to approve your account before logging in."
     ]);
 } catch (PDOException $e) {
     echo json_encode([

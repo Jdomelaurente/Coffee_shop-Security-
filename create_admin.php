@@ -26,14 +26,15 @@ try {
                 id_number, first_name, last_name, email, password, role, 
                 age, sex, contact, dob, purok, barangay, city_municipality, 
                 province, country, zip_code, 
-                question1, answer1, question2, answer2, question3, answer3
+                question1, answer1, question2, answer2, question3, answer3, status
             ) VALUES (
                 :id, 'System', 'Admin', :email, :pass, :role, 
                 30, 'Other', '0000000000', '1990-01-01', 'N/A', 'N/A', 'N/A', 
                 'N/A', 'Philippines', '0000', 
                 'In what city were you born?', :a1, 
                 'What is your favorite food?', :a2, 
-                'What is your favorite color?', :a3
+                'What is your favorite color?', :a3,
+                'approved'
             )";
 
     $stmt = $conn->prepare($sql);

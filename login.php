@@ -53,11 +53,20 @@ $lockDurations = [15, 30, 60]; // seconds
 $failedAttempts = $_SESSION['failed_attempts'] ?? 0;
 
 // Fetch user from database
-$stmt = $conn->prepare("SELECT id, password FROM users WHERE id_number = :id_number");
+$stmt = $conn->prepare("SELECT id, password, status, role FROM users WHERE id_number = :id_number");
 $stmt->execute(['id_number' => $log_username]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($user) {
+    // Check Status first
+    if ($user['status'] === 'pending') {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Your account is pending administrator approval. Please wait for confirmation.'
+        ]);
+        exit;
+    }
+
     if (password_verify($log_password, $user['password'])) {
         $_SESSION['logged_in'] = true;
         $_SESSION['username'] = $log_username;

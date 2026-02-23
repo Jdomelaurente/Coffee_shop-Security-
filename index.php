@@ -1,9 +1,15 @@
 <?php
 session_start();  // Start the session
 
-// Redirect to pos.php if already logged in
+// Redirect to appropriate dashboard if already logged in
 if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
-    header("Location: pos.php");
+    if ($_SESSION['role'] === 'admin') {
+        header("Location: admin_dash.php");
+    } elseif (in_array($_SESSION['role'], ['staff', 'supervisor', 'manager'])) {
+        header("Location: staff_dash.php");
+    } else {
+        header("Location: pos.php");
+    }
     exit;
 }
 ?>
@@ -354,6 +360,8 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
                 }).then(() => {
                     if (data.role === 'admin') {
                         window.location.href = 'admin_dash.php';
+                    } else if (['staff', 'supervisor', 'manager'].includes(data.role)) {
+                        window.location.href = 'staff_dash.php';
                     } else {
                         window.location.href = 'pos.php';
                     }

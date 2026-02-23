@@ -50,7 +50,11 @@ function logActivity($action, $module, $details = []) {
             $user_name = 'System';
         }
         
-        $user_role = $_SESSION['role'] ?? 'Verifications';
+        $user_role = $_SESSION['role'] ?? 'system';
+        // Normalize: 'staff' is treated as 'user'
+        if (strtolower($user_role) === 'staff') {
+            $user_role = 'user';
+        }
         
         // Get IP address (handles proxy forwarding)
         if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
