@@ -5,8 +5,8 @@ if (!isset($_SESSION['logged_in'])) {
     header("Location: index.php");
     exit();
 }
-require_once 'db.php';
-require_once 'log_functions.php';
+require_once 'includes/db.php';
+require_once 'includes/log_functions.php';
 
 // Fetch menu items from DB
 $menu_items = [];
@@ -35,18 +35,19 @@ $initials = substr($initials, 0, 2);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coffee POS – Order</title>
+    <title>Kalinga Coffee | POS Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/pos.css">
+    <link rel="stylesheet" href="assets/css/pos.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 
 <!-- ============ TOPBAR ============ -->
 <header class="topbar">
     <div class="topbar-brand">
-        <i class="fas fa-mug-hot"></i>
-        <h1>Brew<span>POS</span></h1>
+        <i class="fas fa-seedling"></i>
+        <h1>KALINGA COFFEE <span>Masang Kape</span></h1>
     </div>
 
     <div class="topbar-center">
@@ -59,9 +60,11 @@ $initials = substr($initials, 0, 2);
             <div class="user-avatar"><?php echo $initials; ?></div>
             <div>
                 <div class="user-name"><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'User'); ?></div>
-
             </div>
         </div>
+        <button class="activity-btn" onclick="openLogsModal()" title="Recent Activity">
+            <i class="fas fa-history"></i>
+        </button>
         <button class="logout-btn" onclick="confirmLogout()">
             <i class="fas fa-sign-out-alt"></i> Logout
         </button>
@@ -73,15 +76,14 @@ $initials = substr($initials, 0, 2);
 
     <!-- Category Sidebar -->
     <aside class="category-sidebar" id="categorySidebar">
-        <div class="sidebar-label">Categories</div>
         <div class="cat-item active" onclick="filterCategory('all', this)" id="cat-all">
             <i class="fas fa-th-large"></i>
-            <span>All Items</span>
+            <span>All</span>
             <span class="cat-count"><?php echo count($menu_items); ?></span>
         </div>
         <?php
         $cat_icons = [
-            'Coffee'     => 'fas fa-coffee',
+            'Coffee'     => 'fas fa-mug-hot',
             'Tea'        => 'fas fa-leaf',
             'Pastry'     => 'fas fa-bread-slice',
             'Snacks'     => 'fas fa-cookie-bite',
@@ -99,19 +101,6 @@ $initials = substr($initials, 0, 2);
             <span class="cat-count"><?php echo count($items); ?></span>
         </div>
         <?php endforeach; ?>
-
-        <?php if (empty($categories)): ?>
-        <!-- Demo categories if DB has no items -->
-        <div class="cat-item" onclick="filterCategory('Coffee', this)">
-            <i class="fas fa-coffee"></i><span>Coffee</span><span class="cat-count">6</span>
-        </div>
-        <div class="cat-item" onclick="filterCategory('Pastry', this)">
-            <i class="fas fa-bread-slice"></i><span>Pastry</span><span class="cat-count">4</span>
-        </div>
-        <div class="cat-item" onclick="filterCategory('Cold Drinks', this)">
-            <i class="fas fa-glass-whiskey"></i><span>Cold Drinks</span><span class="cat-count">3</span>
-        </div>
-        <?php endif; ?>
     </aside>
 
     <!-- Products Area -->
@@ -141,9 +130,10 @@ $initials = substr($initials, 0, 2);
                      data-name="<?php echo htmlspecialchars(strtolower($item['name'])); ?>">
                     <div class="product-img">
                         <?php if (!empty($item['image_url'])): ?>
-                        <img src="<?php echo htmlspecialchars($item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['name']); ?>" style="width:100%;height:100%;object-fit:cover;">
+                            <img src="<?php echo htmlspecialchars($item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['name']); ?>">
                         <?php else: ?>
-                        <i class="fas fa-mug-hot"></i>
+                            <?php $img_idx = (($item['id'] ?? 1) % 6) + 1; ?>
+                            <img src="assets/coffee/Kape-<?php echo $img_idx; ?>-removebg-preview.png" alt="<?php echo htmlspecialchars($item['name']); ?>">
                         <?php endif; ?>
                     </div>
                     <?php if ($out): ?>
@@ -185,7 +175,10 @@ $initials = substr($initials, 0, 2);
                      data-category="<?php echo $d['cat']; ?>"
                      data-name="<?php echo strtolower($d['name']); ?>">
                     <div class="product-img">
-                        <i class="<?php echo $d['icon']; ?>"></i>
+                        <?php 
+                            $img_idx = (($d['id'] ?? 1) % 6) + 1;
+                        ?>
+                        <img src="assets/coffee/Kape-<?php echo $img_idx; ?>-removebg-preview.png" alt="<?php echo $d['name']; ?>">
                     </div>
                     <div class="product-info">
                         <div class="product-name"><?php echo $d['name']; ?></div>
@@ -208,11 +201,11 @@ $initials = substr($initials, 0, 2);
         <div class="cart-header">
             <div class="cart-title">
                 <i class="fas fa-shopping-basket"></i>
-                Your Order
+                My Order
                 <span class="cart-badge" id="cartBadge">0</span>
             </div>
             <button class="clear-cart-btn" onclick="clearCart()">
-                <i class="fas fa-trash-alt"></i> Clear
+                <i class="fas fa-trash-alt"></i> Delete
             </button>
         </div>
 
@@ -220,14 +213,14 @@ $initials = substr($initials, 0, 2);
             <div class="cart-empty" id="cartEmpty">
                 <i class="fas fa-coffee"></i>
                 <p>Your cart is empty</p>
-                <small>Tap an item to add it</small>
+                <small>Select an item from the menu</small>
             </div>
         </div>
 
         <div class="cart-footer">
             <div class="subtotals" id="subtotalsArea">
                 <div class="subtotal-row">
-                    <span>Subtotal</span>
+                    <span>Sub-total</span>
                     <span id="subtotalVal">₱0.00</span>
                 </div>
                 <div class="subtotal-row" id="discountRow" style="display:none; color:#E65100;">
@@ -261,7 +254,7 @@ $initials = substr($initials, 0, 2);
             </div>
 
             <button class="checkout-btn" id="checkoutBtn" onclick="openCheckout()" disabled>
-                <i class="fas fa-receipt"></i> Checkout
+                <i class="fas fa-receipt"></i> Pay Now
             </button>
         </div>
     </aside>
@@ -356,6 +349,24 @@ $initials = substr($initials, 0, 2);
     </div>
 </div>
 
+<!-- ============ ACTIVITY LOGS MODAL ============ -->
+<div class="modal-overlay" id="logsModal">
+    <div class="modal-box" style="max-width: 550px;">
+        <div class="modal-header-stripe">
+            <h2><i class="fas fa-history"></i> Your Recent Activity</h2>
+            <button class="modal-close" onclick="closeModal('logsModal')">✕</button>
+        </div>
+        <div class="modal-body" style="padding: 0;">
+            <div class="logs-list-container" id="userLogsContent" style="max-height: 400px; overflow-y: auto;">
+                <!-- Logs will be loaded here -->
+                <div style="text-align:center;padding:3rem;color:var(--muted);">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Toast container -->
 <div class="toast-container" id="toastContainer"></div>
 
@@ -399,12 +410,25 @@ function updateNote(id, note) {
 
 function clearCart() {
     if (cart.length === 0) return;
-    if (!confirm('Clear all items?')) return;
-    cart = [];
-    discount = 0;
-    document.getElementById('discountInput').value = '';
-    renderCart();
-    showToast('Cart cleared');
+    
+    Swal.fire({
+        title: 'Clear Cart?',
+        text: "This will remove all items from your current order.",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6C4E31',
+        confirmButtonText: 'Yes, clear it',
+        cancelButtonText: 'No, keep items'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            cart = [];
+            discount = 0;
+            document.getElementById('discountInput').value = '';
+            renderCart();
+            showToast('Cart cleared');
+        }
+    });
 }
 
 // ===== TOTALS =====
@@ -474,7 +498,7 @@ function renderCart() {
                         <span class="qty-value">${item.qty}</span>
                         <button class="qty-btn plus" onclick="changeQty(${item.id}, +1)">+</button>
                     </div>
-                    <button onclick="removeFromCart(${item.id})" style="background:none;border:none;color:#C62828;cursor:pointer;font-size:1.2rem;">
+                    <button class="remove-item-btn" onclick="removeFromCart(${item.id})">
                         <i class="fas fa-times"></i> Remove
                     </button>
                 </div>
@@ -640,7 +664,7 @@ function confirmOrder() {
     document.getElementById('receiptModal').classList.add('open');
 
     // Log activity (send to server silently)
-    fetch('log_activity.php', {
+    fetch('actions/log_activity.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
@@ -690,21 +714,72 @@ function showToast(msg, type = '') {
 
 // ===== LOGOUT =====
 function confirmLogout() {
-    if (confirm('Are you sure you want to logout?')) {
-        window.location.href = 'log-out.php';
-    }
+    Swal.fire({
+        title: 'Ready to Leave?',
+        text: "You will need to login again to access the POS.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#6C4E31',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, logout',
+        cancelButtonText: 'Stay here',
+        background: '#fff',
+        borderRadius: '15px'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = 'actions/log-out.php';
+        }
+    });
 }
 
-// Close modals on overlay click
-document.getElementById('checkoutModal').addEventListener('click', function(e) {
-    if (e.target === this) closeCheckout();
-});
-document.getElementById('receiptModal').addEventListener('click', function(e) {
-    if (e.target === this) document.getElementById('receiptModal').classList.remove('open');
-});
+// ===== ACTIVITY LOGS =====
+function openLogsModal() {
+    document.getElementById('logsModal').classList.add('open');
+    const content = document.getElementById('userLogsContent');
+    content.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--muted);"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+
+    fetch('actions/get_logs.php?page=1&show_all=1')
+    .then(r => r.json())
+    .then(data => {
+        const logs = data.logs || [];
+        if (!logs.length) {
+            content.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--muted);">No recent activities found.</div>';
+            return;
+        }
+
+        let html = '<table class="user-logs-table" style="width:100%; border-collapse:collapse; font-size:1.3rem;">';
+        logs.forEach(log => {
+            html += `
+                <tr style="border-bottom:1px solid rgba(0,0,0,0.05);">
+                    <td style="padding:1.4rem; color:var(--muted); width:30%;">${log.date_fmt}<br><small>${log.time_fmt}</small></td>
+                    <td style="padding:1.4rem;">
+                        <div style="font-weight:600; color:var(--primary-brown);">${log.action}</div>
+                        <div style="font-size:1.1rem; color:var(--muted);">${log.module}</div>
+                    </td>
+                </tr>
+            `;
+        });
+        html += '</table>';
+        content.innerHTML = html;
+    })
+    .catch(err => {
+        content.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--danger);">Failed to load activity logs.</div>';
+    });
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+}
 
 // Init
 renderCart();
+
+// Close modals on overlay click
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal-overlay')) {
+        event.target.classList.remove('open');
+    }
+};
 </script>
 </body>
 </html>

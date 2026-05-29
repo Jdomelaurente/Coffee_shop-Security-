@@ -9,30 +9,55 @@ session_start();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forgot Password - Coffee Shop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+        body {
+            background: url('assets/images/background.jpg') center/cover no-repeat fixed;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: rgba(45, 23, 15, 0.75);
+            z-index: 0;
+        }
+
         .forgot-password-container {
-            max-width: 500px;
-            margin: 100px auto;
-            padding: 30px;
-            background: linear-gradient(135deg, #4a2c2a 0%, #2c1810 100%);
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 50px;
+            background: linear-gradient(135deg, #3d241d 0%, #23120b 100%);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 234, 197, 0.1);
         }
 
         .forgot-password-container h1 {
             text-align: center;
             color: #FFEAC5;
-            margin-bottom: 10px;
-            font-size: 2rem;
+            margin-bottom: 12px;
+            font-size: 2.4rem;
+            font-weight: 700;
         }
 
         .forgot-password-container p {
             text-align: center;
-            color: #ffffff;
-            margin-bottom: 25px;
-            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 35px;
+            font-size: 1.6rem;
+            line-height: 1.6;
         }
 
         .step-indicator {
@@ -49,7 +74,7 @@ session_start();
             margin: 0 5px;
             border-radius: 8px;
             color: #999;
-            font-size: 0.85rem;
+            font-size: 1.25rem;
             position: relative;
         }
 
@@ -79,20 +104,24 @@ session_start();
         .input-group label {
             display: block;
             color: #FFEAC5;
-            margin-bottom: 8px;
-            font-weight: 500;
+            margin-bottom: 12px;
+            font-weight: 600;
+            font-size: 1.35rem;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
         }
 
         .input-group input,
         .input-group select {
             width: 100%;
-            padding: 12px;
-            border: 2px solid rgba(255, 234, 197, 0.3);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
+            padding: 16px 20px;
+            border: 2px solid rgba(255, 234, 197, 0.2);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
             color: white;
-            font-size: 1rem;
+            font-size: 1.45rem;
             box-sizing: border-box;
+            transition: all 0.3s;
         }
 
         .input-group input:focus,
@@ -120,15 +149,17 @@ session_start();
 
         .btn-submit {
             width: 100%;
-            padding: 12px;
+            padding: 18px;
             background: #FFEAC5;
             color: #2c1810;
             border: none;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: bold;
+            border-radius: 12px;
+            font-size: 1.4rem;
+            font-weight: 800;
             cursor: pointer;
             transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
         }
 
         .btn-submit:hover {
@@ -146,19 +177,44 @@ session_start();
 
         .btn-back {
             width: 100%;
-            padding: 10px;
+            padding: 14px;
             background: transparent;
             color: #FFEAC5;
             border: 2px solid #FFEAC5;
-            border-radius: 8px;
-            font-size: 1rem;
+            border-radius: 12px;
+            font-size: 1.25rem;
+            font-weight: 600;
             cursor: pointer;
-            margin-top: 10px;
+            margin-top: 15px;
             transition: all 0.3s;
         }
 
         .btn-back:hover {
             background: rgba(255, 234, 197, 0.1);
+        }
+
+        .password-toggle-wrapper {
+            position: relative;
+            margin-top: 10px;
+        }
+
+        .password-toggle-wrapper input {
+            padding-right: 48px !important;
+        }
+
+        .toggle-icon {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #FFEAC5;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        .toggle-icon:hover {
+            opacity: 1;
         }
 
         .otp-input {
@@ -188,6 +244,26 @@ session_start();
             color: #ff6b6b;
             font-weight: bold;
         }
+
+        .req-item {
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: color 0.3s;
+        }
+
+        .req-item i {
+            font-size: 0.6rem;
+        }
+
+        .req-item.valid {
+            color: #4CAF50 !important;
+        }
+
+        .req-item.valid i {
+            content: "\f058"; /* check-circle */
+        }
     </style>
 </head>
 <body>
@@ -195,25 +271,32 @@ session_start();
 <div class="forgot-password-container">
     <!-- Step Indicator -->
     <div class="step-indicator">
-        <div class="step active" id="step-1-indicator">1. Email</div>
+        <div class="step active" id="step-1-indicator">1. Information</div>
         <div class="step" id="step-2-indicator">2. OTP</div>
         <div class="step" id="step-3-indicator">3. Security</div>
         <div class="step" id="step-4-indicator">4. Password</div>
     </div>
 
-    <!-- Step 1: Email Input -->
     <div class="form-step active" id="step-1">
         <h1>Forgot Password?</h1>
-        <p>Enter your email address to receive a verification code</p>
+        <p>Enter your ID Number to verify your account</p>
         
         <form id="email-form">
             <div class="input-group">
-                <label for="email">Email Address <span class="hash">*</span></label>
-                <input type="email" id="email" name="email" placeholder="your.email@example.com" required>
+                <label for="uid">ID Number <span class="hash">*</span></label>
+                <input type="text" id="uid" name="id_number" placeholder="xxxx-xxxx" required>
+                <div id="user-info-indicator" style="margin-top: 15px; display: none; background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 10px; border-left: 4px solid #4CAF50;">
+                    <div style="color: #4CAF50; font-weight: 700; font-size: 1.2rem; margin-bottom: 5px;">
+                        <i class="fas fa-check-circle"></i> User Found: <span id="indicator-name" style="color: #f7fff7;"></span>
+                    </div>
+                    <div style="color: #FFEAC5; font-size: 1.1rem; opacity: 0.9;">
+                        Email: <span id="indicator-email" style="font-family: monospace; letter-spacing: 1px;"></span>
+                    </div>
+                </div>
                 <div class="error-message" id="email-error"></div>
             </div>
             
-            <button type="submit" class="btn-submit" id="send-otp-btn">Send Verification Code</button>
+            <button type="submit" class="btn-submit" id="send-otp-btn" disabled>Send Verification Code</button>
         </form>
         
         <button class="btn-back" onclick="window.location.href='index.php'">Back to Login</button>
@@ -253,7 +336,10 @@ session_start();
                     <option value="city">In what city were you born?</option>
                     <option value="school">What was the name of your elementary school?</option>
                 </select>
-                <input type="text" name="answer1" id="answer1" placeholder="Your answer" required style="margin-top: 10px;">
+                <div class="password-toggle-wrapper">
+                    <input type="password" name="answer1" id="answer1" placeholder="Your answer" required>
+                    <i class="fas fa-eye toggle-icon" onclick="toggleField('answer1', this)"></i>
+                </div>
                 <div class="error-message" id="q1-error"></div>
             </div>
 
@@ -265,7 +351,10 @@ session_start();
                     <option value="mother">What is your mother's maiden name?</option>
                     <option value="book">What is your favorite book?</option>
                 </select>
-                <input type="text" name="answer2" id="answer2" placeholder="Your answer" required style="margin-top: 10px;">
+                <div class="password-toggle-wrapper">
+                    <input type="password" name="answer2" id="answer2" placeholder="Your answer" required>
+                    <i class="fas fa-eye toggle-icon" onclick="toggleField('answer2', this)"></i>
+                </div>
                 <div class="error-message" id="q2-error"></div>
             </div>
 
@@ -277,7 +366,10 @@ session_start();
                     <option value="job">What was your first job?</option>
                     <option value="hobby">What is your favorite hobby?</option>
                 </select>
-                <input type="text" name="answer3" id="answer3" placeholder="Your answer" required style="margin-top: 10px;">
+                <div class="password-toggle-wrapper">
+                    <input type="password" name="answer3" id="answer3" placeholder="Your answer" required>
+                    <i class="fas fa-eye toggle-icon" onclick="toggleField('answer3', this)"></i>
+                </div>
                 <div class="error-message" id="q3-error"></div>
             </div>
             
@@ -294,6 +386,13 @@ session_start();
             <div class="input-group">
                 <label for="new-password">New Password <span class="hash">*</span></label>
                 <input type="password" id="new-password" name="new_password" placeholder="Enter new password" required>
+                <div id="password-requirements" style="margin-top: 10px; font-size: 0.85rem; color: #FFEAC5;">
+                    <div id="req-length" class="req-item"><i class="fas fa-circle"></i> 12-15 characters</div>
+                    <div id="req-upper" class="req-item"><i class="fas fa-circle"></i> At least one uppercase letter</div>
+                    <div id="req-lower" class="req-item"><i class="fas fa-circle"></i> At least one lowercase letter</div>
+                    <div id="req-number" class="req-item"><i class="fas fa-circle"></i> At least one number</div>
+                    <div id="req-special" class="req-item"><i class="fas fa-circle"></i> At least one special character</div>
+                </div>
                 <div class="error-message" id="password-error"></div>
             </div>
 
@@ -348,25 +447,106 @@ session_start();
         currentStep = step;
     }
 
+    function toggleField(id, icon) {
+        const input = document.getElementById(id);
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+
+    function maskName(name) {
+        if (!name) return "";
+        return name.split(' ').map(part => {
+            if (part.length <= 1) return part;
+            return part[0] + '*'.repeat(part.length - 2) + part[part.length - 1];
+        }).join(' ');
+    }
+
+    // Real-time user check
+    const uidInput = document.getElementById('uid');
+    const indicator = document.getElementById('user-info-indicator');
+    const indicatorName = document.getElementById('indicator-name');
+    const indicatorEmail = document.getElementById('indicator-email');
+    const sendBtn = document.getElementById('send-otp-btn');
+    const errorDiv = document.getElementById('email-error');
+
+    uidInput.addEventListener('input', function() {
+        const val = this.value.trim();
+        if (val.length >= 4) {
+            fetch('actions/process_forgot_password.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'get_user_info', id_number: val })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    indicatorName.textContent = maskName(data.full_name);
+                    indicatorEmail.textContent = data.masked_email;
+                    indicator.style.display = 'block';
+                    errorDiv.style.display = 'none';
+                    sendBtn.disabled = false;
+                } else {
+                    indicator.style.display = 'none';
+                    sendBtn.disabled = true;
+                    
+                    // Show specific note if account is pending or rejected
+                    if (data.message && data.message.toLowerCase().includes('account is currently')) {
+                        errorDiv.innerHTML = `<i class="fas fa-info-circle"></i> ${data.message}`;
+                        errorDiv.style.color = '#FFEAC5'; 
+                        errorDiv.style.background = 'rgba(255, 152, 0, 0.2)';
+                        errorDiv.style.padding = '15px';
+                        errorDiv.style.borderRadius = '10px';
+                        errorDiv.style.borderLeft = '4px solid #ff9800';
+                        errorDiv.style.fontSize = '1.3rem';
+                        errorDiv.style.fontWeight = '600';
+                        errorDiv.style.marginTop = '15px';
+                        errorDiv.style.display = 'block';
+                    } else if (val.length > 8) { // Only show "Not Found" if they typed a full ID
+                        errorDiv.textContent = data.message || 'User not found';
+                        errorDiv.style.color = '#ff6b6b'; // Error red
+                        errorDiv.style.background = 'none';
+                        errorDiv.style.padding = '0';
+                        errorDiv.style.border = 'none';
+                        errorDiv.style.fontSize = '1.1rem';
+                        errorDiv.style.display = 'block';
+                    } else {
+                        errorDiv.style.display = 'none';
+                    }
+                }
+            });
+        } else {
+            indicator.style.display = 'none';
+            errorDiv.style.display = 'none';
+            sendBtn.disabled = true;
+        }
+    });
+
     // Step 1: Send OTP
     document.getElementById('email-form').addEventListener('submit', function(e) {
         e.preventDefault();
         
-        const email = document.getElementById('email').value;
+        const id_number = document.getElementById('uid').value;
         const btn = document.getElementById('send-otp-btn');
         
         btn.disabled = true;
         btn.textContent = 'Sending...';
 
-        fetch('process_forgot_password.php', {
+        fetch('actions/process_forgot_password.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'send_otp', email: email })
+            body: JSON.stringify({ action: 'send_otp', id_number: id_number })
         })
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                document.getElementById('email-display').textContent = email;
+                document.getElementById('email-display').textContent = indicatorEmail.textContent;
                 goToStep(2);
                 startResendTimer();
                 Swal.fire({
@@ -404,7 +584,7 @@ session_start();
         btn.disabled = true;
         btn.textContent = 'Verifying...';
 
-        fetch('process_forgot_password.php', {
+        fetch('actions/process_forgot_password.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'verify_otp', otp: otp })
@@ -457,7 +637,7 @@ session_start();
         btn.disabled = true;
         btn.textContent = 'Verifying...';
 
-        fetch('process_forgot_password.php', {
+        fetch('actions/process_forgot_password.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
@@ -494,24 +674,59 @@ session_start();
         });
     });
 
-   // Step 4: Reset Password - Update this section in your forgot_password.php
+    // Step 4: Password Validation & Show/Hide
+    const newPassInput = document.getElementById('new-password');
+    const confirmPassInput = document.getElementById('confirm-password');
+    const showPassCheck = document.getElementById('show-passwords');
+    
+    showPassCheck.addEventListener('change', function() {
+        const type = this.checked ? 'text' : 'password';
+        newPassInput.type = type;
+        confirmPassInput.type = type;
+    });
+
+    function validatePassword(pass) {
+        const checks = {
+            length: pass.length >= 12 && pass.length <= 15,
+            upper: /[A-Z]/.test(pass),
+            lower: /[a-z]/.test(pass),
+            number: /[0-9]/.test(pass),
+            special: /[^A-Za-z0-9]/.test(pass)
+        };
+
+        Object.keys(checks).forEach(id => {
+            const el = document.getElementById('req-' + id);
+            if (checks[id]) {
+                el.classList.add('valid');
+                el.querySelector('i').className = 'fas fa-check-circle';
+            } else {
+                el.classList.remove('valid');
+                el.querySelector('i').className = 'fas fa-circle';
+            }
+        });
+
+        return Object.values(checks).every(v => v === true);
+    }
+
+    newPassInput.addEventListener('input', function() {
+        validatePassword(this.value);
+    });
+
     document.getElementById('password-form').addEventListener('submit', function(e) {
         e.preventDefault();
         
-        const newPassword = document.getElementById('new-password').value;
-        const confirmPassword = document.getElementById('confirm-password').value;
+        const newPassword = newPassInput.value;
+        const confirmPassword = confirmPassInput.value;
         
-        // Validate passwords match
-        if (newPassword !== confirmPassword) {
-            document.getElementById('confirm-error').textContent = 'Passwords do not match';
-            document.getElementById('confirm-error').style.display = 'block';
+        if (!validatePassword(newPassword)) {
+            document.getElementById('password-error').textContent = 'Password does not meet requirements';
+            document.getElementById('password-error').style.display = 'block';
             return;
         }
 
-        // Validate password strength
-        if (newPassword.length < 8) {
-            document.getElementById('password-error').textContent = 'Password must be at least 8 characters';
-            document.getElementById('password-error').style.display = 'block';
+        if (newPassword !== confirmPassword) {
+            document.getElementById('confirm-error').textContent = 'Passwords do not match';
+            document.getElementById('confirm-error').style.display = 'block';
             return;
         }
         
@@ -519,7 +734,7 @@ session_start();
         btn.disabled = true;
         btn.textContent = 'Resetting...';
 
-        fetch('process_forgot_password.php', {
+        fetch('actions/process_forgot_password.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -583,12 +798,12 @@ session_start();
 
     // Resend OTP
     document.getElementById('resend-otp').addEventListener('click', function() {
-        const email = document.getElementById('email').value;
+        const id_number = uidInput.value;
         
-        fetch('process_forgot_password.php', {
+        fetch('actions/process_forgot_password.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'send_otp', email: email })
+            body: JSON.stringify({ action: 'send_otp', id_number: id_number })
         })
         .then(response => response.json())
         .then(data => {

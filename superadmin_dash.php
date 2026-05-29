@@ -1,24 +1,12 @@
 <?php
 session_start();
-if (!isset($_SESSION['logged_in']) || ($_SESSION['role'] ?? '') !== 'admin') {
+if (!isset($_SESSION['logged_in']) || ($_SESSION['role'] ?? '') !== 'superadmin') {
     header("Location: index.php");
     exit();
 }
 require_once 'includes/db.php';
 require_once 'includes/log_functions.php';
-$isSuperadmin = false;
-
-// Fetch Privileges
-$admin_id = $_SESSION['user_id'];
-$stmt = $conn->prepare("SELECT * FROM admin_privileges WHERE admin_id = ?");
-$stmt->execute([$admin_id]);
-$privs = $stmt->fetch(PDO::FETCH_ASSOC);
-
-// Defaults if not set
-$can_add_user = $privs['can_add_user'] ?? false;
-$can_block_user = $privs['can_block_user'] ?? false;
-$can_view_users = $privs['can_view_users'] ?? false;
-
+$isSuperadmin = true;
 
 // Avatar initials
 $name_parts = explode(' ', $_SESSION['user_name'] ?? 'Admin');
@@ -38,11 +26,6 @@ $filters = [];
 if ($filter_module) $filters['module'] = $filter_module;
 if ($filter_search) $filters['search'] = $filter_search;
 if ($filter_date)   { $filters['date_from'] = $filter_date . ' 00:00:00'; $filters['date_to'] = $filter_date . ' 23:59:59'; }
-
-// Admins should not see superadmin logs
-if (!$isSuperadmin) {
-    $filters['user_role'] = ['user', 'admin'];
-}
 
 $logs_data   = getActivityLogs($filters, $limit, $offset);
 $logs        = $logs_data['data']  ?? [];
@@ -68,11 +51,12 @@ function roleDisplay($role) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalinga Coffee | Admin Dashboard</title>
+    <title>Kalinga Coffee | Superadmin Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/admin.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         .role-selection-grid {
             display: grid;
@@ -144,8 +128,11 @@ function roleDisplay($role) {
             transform: scale(1);
         }
 
-        .role-card[data-role="user"].selected .role-check { color: #3498db; }
-
+        /* Color Coding for Roles */
+        .role-card[data-role="superadmin"].selected { border-color: #e74c3c; background: rgba(231, 76, 60, 0.05); }
+        .role-card[data-role="superadmin"]:hover .role-icon, .role-card[data-role="superadmin"].selected .role-icon { background: #e74c3c; }
+        .role-card[data-role="superadmin"].selected .role-check { color: #e74c3c; }        
+        
         /* Premium Pagination Styles - Exact Match to Design */
         .pagination-container {
             display: flex;
@@ -216,14 +203,11 @@ function roleDisplay($role) {
             position: relative;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
 
-<!-- ======== SIDEBAR BACKDROP (mobile) ======== -->
 <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeMobileSidebar()"></div>
 
-<!-- ======== SIDEBAR ======== -->
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
         <i class="fas fa-seedling"></i>
@@ -240,14 +224,12 @@ function roleDisplay($role) {
         <div class="nav-link" onclick="navigateTo('inventory',this)" id="nl-inventory">
             <i class="fas fa-boxes"></i><span class="nav-text">Inventory</span>
         </div>
-        <?php if ($can_view_users): ?>
         <div class="nav-link" onclick="navigateTo('user',this)" id="nl-user">
             <i class="fas fa-users"></i><span class="nav-text">Users</span>
         </div>
         <div class="nav-link" onclick="navigateTo('user-approval',this)" id="nl-user-approval">
             <i class="fas fa-user-check"></i><span class="nav-text">User Approvals</span>
         </div>
-        <?php endif; ?>
         <div class="nav-link" onclick="navigateTo('reports',this)" id="nl-reports">
             <i class="fas fa-chart-bar"></i><span class="nav-text">Reports</span>
         </div>
@@ -272,52 +254,33 @@ function roleDisplay($role) {
     </div>
 </aside>
 
-<!-- ======== MAIN CONTENT ======== -->
 <div class="main-content" id="mainContent">
-
-    <!-- TOPBAR -->
     <header class="topbar">
         <div class="topbar-left">
-            <button class="mobile-menu-btn" onclick="openMobileSidebar()">
-                <i class="fas fa-bars"></i>
-            </button>
+            <button class="mobile-menu-btn" onclick="openMobileSidebar()"><i class="fas fa-bars"></i></button>
             <div class="page-breadcrumb">
-                <i class="fas fa-mug-hot" style="color:var(--brown-light)"></i>
-                <span>Coffee Shop</span>
-                <i class="fas fa-chevron-right" style="font-size:1rem"></i>
-                <span class="current" id="pageTitle">Overview</span>
+                <i class="fas fa-mug-hot"></i><span>Coffee Shop</span><i class="fas fa-chevron-right"></i><span class="current" id="pageTitle">Overview</span>
             </div>
         </div>
         <div class="topbar-right">
-            <div class="topbar-date">
-                <i class="fas fa-calendar-alt"></i>
-                <?php echo date('F j, Y'); ?>
-            </div>
+            <div class="topbar-date"><i class="fas fa-calendar-alt"></i> <?php echo date('F j, Y'); ?></div>
             <div class="user-chip">
                 <div class="user-avatar"><?php echo $initials; ?></div>
-                <div>
-                    <div class="user-name"><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Admin'); ?></div>
-                    <div class="user-role-lbl">Administrator</div>
-                </div>
+                <div><div class="user-name"><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Admin'); ?></div><div class="user-role-lbl">Superadmin</div></div>
             </div>
-            <button class="logout-btn" onclick="confirmLogout()">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
+            <button class="logout-btn" onclick="confirmLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
         </div>
     </header>
 
-    <!-- CONTENT AREA -->
     <div class="content-area">
-
-        <!-- ===== OVERVIEW ===== -->
         <div id="overview-section" class="section-view active">
             <div class="page-hdr">
                 <div>
-                    <div class="page-hdr-title">Admin Control Panel</div>
-                    <div class="page-hdr-sub">Welcome back, <?php echo htmlspecialchars(explode(' ', $_SESSION['user_name'] ?? 'Admin')[0]); ?>! Comprehensive system overview and administrative tools.</div>
+                    <div class="page-hdr-title">Superadmin Control Panel</div>
+                    <div class="page-hdr-sub">Welcome back, Superadmin! Comprehensive system overview and administrative tools.</div>
                 </div>
                 <button class="btn btn-primary" onclick="navigateTo('reports', document.getElementById('nl-reports'))">
-                    <i class="fas fa-chart-line"></i> View Reports
+                    <i class="fas fa-chart-line"></i> Global Reports
                 </button>
             </div>
 
@@ -335,8 +298,8 @@ function roleDisplay($role) {
                     <div class="stat-icon info"><i class="fas fa-receipt"></i></div>
                     <div class="stat-body">
                         <div class="stat-value">142</div>
-                        <div class="stat-label">Transactions Today</div>
-                        <div class="stat-change neutral"><i class="fas fa-clock"></i> Peak: 9:00 AM</div>
+                        <div class="stat-label">Total Transactions</div>
+                        <div class="stat-change neutral"><i class="fas fa-clock"></i> Peak: 10:00 AM</div>
                     </div>
                 </div>
                 <div class="stat-card danger">
@@ -358,31 +321,27 @@ function roleDisplay($role) {
             </div>
 
             <!-- Two-column: Quick shortcuts + Recent logs -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;flex-wrap:wrap;" id="overviewCols">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;flex-wrap:wrap; margin-top:2rem;" id="overviewCols">
                 <!-- Quick Actions -->
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title"><i class="fas fa-bolt"></i> Quick Actions</div>
+                        <div class="card-title"><i class="fas fa-bolt"></i> Global Quick Actions</div>
                     </div>
                     <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
                         <button class="btn btn-primary" style="justify-content:center;" onclick="navigateTo('inventory',document.getElementById('nl-inventory'))">
                             <i class="fas fa-boxes"></i> Inventory
                         </button>
-                        <?php if ($can_add_user): ?>
                         <button class="btn btn-ghost" style="justify-content:center; color: var(--primary-brown); border-color: var(--primary-brown);" onclick="openModal('addUserModal')">
-                            <i class="fas fa-user-plus"></i> Add New User
+                            <i class="fas fa-user-plus"></i> Add User
                         </button>
-                        <?php endif; ?>
-                        <?php if ($can_view_users): ?>
                         <button class="btn btn-ghost" style="justify-content:center;" onclick="navigateTo('user',document.getElementById('nl-user'))">
                             <i class="fas fa-users"></i> Users
                         </button>
                         <button class="btn btn-ghost" style="justify-content:center;" onclick="navigateTo('user-approval',document.getElementById('nl-user-approval'))">
                             <i class="fas fa-user-check"></i> Approvals
                         </button>
-                        <?php endif; ?>
                         <button class="btn btn-ghost" style="justify-content:center;" onclick="navigateTo('logs',document.getElementById('nl-logs'))">
-                            <i class="fas fa-history"></i> View Logs
+                            <i class="fas fa-history"></i> Global Logs
                         </button>
                         <button class="btn btn-success" style="justify-content:center;" onclick="navigateTo('reports',document.getElementById('nl-reports'))">
                             <i class="fas fa-chart-pie"></i> Reports
@@ -393,7 +352,7 @@ function roleDisplay($role) {
                 <!-- Recent activity feed -->
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title"><i class="fas fa-stream"></i> Recent Activity</div>
+                        <div class="card-title"><i class="fas fa-stream"></i> Recent Global Activity</div>
                         <button class="btn btn-ghost btn-sm" onclick="navigateTo('logs',document.getElementById('nl-logs'))">View All</button>
                     </div>
                     <div class="card-body">
@@ -418,89 +377,23 @@ function roleDisplay($role) {
                             <span class="badge <?php echo moduleBadge($ra['module'] ?? ''); ?>"><?php echo htmlspecialchars($ra['module'] ?? ''); ?></span>
                         </div>
                         <?php endforeach; else: ?>
-                        <div style="text-align:center;color:var(--muted);padding:3rem;font-size:1.4rem;">No recent activity</div>
+                        <div style="text-align:center;color:var(--muted);padding:3rem;font-size:1.1rem;">No recent global activity</div>
                         <?php endif; ?>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ===== INVENTORY ===== -->
         <div id="inventory-section" class="section-view">
-            <div class="page-hdr">
-                <div>
-                    <div class="page-hdr-title">Inventory Management</div>
-                    <div class="page-hdr-sub">Monitor and manage your stock levels</div>
-                </div>
-                <button class="btn btn-primary" onclick="openModal('addInventoryModal')">
-                    <i class="fas fa-plus"></i> Add Item
-                </button>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title"><i class="fas fa-boxes"></i> Stock Items</div>
-                    <div style="display:flex;gap:.8rem;flex-wrap:wrap;">
-                        <span class="badge badge-normal">Arabica Beans: 45kg</span>
-                        <span class="badge badge-danger">Milk Low</span>
-                    </div>
-                </div>
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Product Name</th>
-                                <th>Category</th>
-                                <th>Quantity</th>
-                                <th>Unit</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>Arabica Coffee Beans</strong></td>
-                                <td>Coffee</td>
-                                <td>45</td>
-                                <td>kg</td>
-                                <td><span class="status-pill normal">Normal</span></td>
-                                <td><button class="btn btn-ghost btn-sm"><i class="fas fa-edit"></i> Edit</button></td>
-                            </tr>
-                            <tr>
-                                <td><strong>Whole Milk</strong></td>
-                                <td>Dairy</td>
-                                <td>8</td>
-                                <td>L</td>
-                                <td><span class="status-pill low">Low Stock</span></td>
-                                <td><button class="btn btn-ghost btn-sm"><i class="fas fa-edit"></i> Edit</button></td>
-                            </tr>
-                             <tr>
-                                <td><strong>Sugar</strong></td>
-                                <td>Supplies</td>
-                                <td>2</td>
-                                <td>kg</td>
-                                <td><span class="status-pill critical">Critical</span></td>
-                                <td><button class="btn btn-ghost btn-sm"><i class="fas fa-edit"></i> Edit</button></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+             <div class="page-hdr"><div><div class="page-hdr-title">Inventory Management</div></div></div>
+             <div class="card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Product</th><th>Quantity</th><th>Action</th></tr></thead><tbody><tr><td>Arabica Beans</td><td>45kg</td><td><button class="btn btn-ghost btn-sm">Edit</button></td></tr></tbody></table></div></div>
         </div>
 
-        <?php if ($can_view_users): ?>
         <!-- ===== USERS ===== -->
         <div id="user-section" class="section-view">
             <div class="page-hdr">
-                <div>
-                    <div class="page-hdr-title">Registered Users</div>
-                    <div class="page-hdr-sub">Manage approved user accounts and system access</div>
-                </div>
-                <?php if ($can_add_user): ?>
-                <button class="btn btn-primary" onclick="openModal('addUserModal')">
-                    <i class="fas fa-user-plus"></i> Add New User
-                </button>
-                <?php endif; ?>
+                <div><div class="page-hdr-title">Registered Users</div><div class="page-hdr-sub">Manage approved user accounts and system access</div></div>
+                <button class="btn btn-primary" onclick="openModal('addUserModal')"><i class="fas fa-user-plus"></i> Add New User</button>
             </div>
 
             <!-- Role Privileges Summary -->
@@ -529,19 +422,14 @@ function roleDisplay($role) {
                                 <span class="badge badge-admin" style="font-size:1.3rem; padding:0.6rem 1.2rem; background:rgba(62,31,0,0.2);">Admin</span>
                                 <i class="fas fa-user-shield" style="color:var(--primary-brown); font-size:1.6rem;"></i>
                             </div>
-                            <div style="margin-bottom: 0.8rem; font-weight: 600; color: var(--primary-brown); font-size: 1.1rem; border-bottom: 1px dashed rgba(108, 78, 49, 0.2); padding-bottom: 0.4rem;">Your Current Permissions:</div>
+                            <div style="margin-bottom: 0.8rem; font-weight: 600; color: var(--primary-brown); font-size: 1.1rem; border-bottom: 1px dashed rgba(108, 78, 49, 0.2); padding-bottom: 0.4rem;">Configurable Privileges:</div>
                             <ul style="list-style:none; padding:0; display:grid; gap:0.8rem; font-size:1.2rem; color:var(--muted);">
-                                <li style="<?php echo $can_add_user ? 'color:var(--accent-green);' : 'opacity:0.5;'; ?>">
-                                    <i class="fas <?php echo $can_add_user ? 'fa-check-circle' : 'fa-times-circle'; ?>" style="margin-right:0.6rem;"></i> <strong>Add New Users</strong>
-                                </li>
-                                <li style="<?php echo $can_block_user ? 'color:var(--accent-green);' : 'opacity:0.5;'; ?>">
-                                    <i class="fas <?php echo $can_block_user ? 'fa-check-circle' : 'fa-times-circle'; ?>" style="margin-right:0.6rem;"></i> <strong>Block Users</strong>
-                                </li>
-                                <li style="<?php echo $can_view_users ? 'color:var(--accent-green);' : 'opacity:0.5;'; ?>">
-                                    <i class="fas <?php echo $can_view_users ? 'fa-check-circle' : 'fa-times-circle'; ?>" style="margin-right:0.6rem;"></i> <strong>View User Data</strong>
-                                </li>
-                                <li><i class="fas fa-check-circle" style="color:var(--accent-green); margin-right:0.6rem;"></i> Manage Inventory & Sales Reports</li>
-                                <li><i class="fas fa-check-circle" style="color:var(--accent-green); margin-right:0.6rem;"></i> View Activity Logs</li>
+                                <li><i class="fas fa-key" style="color:var(--primary-light); margin-right:0.6rem;"></i> <strong>Add New Users</strong></li>
+                                <li><i class="fas fa-key" style="color:var(--primary-light); margin-right:0.6rem;"></i> <strong>Block Users</strong></li>
+                                <li><i class="fas fa-key" style="color:var(--primary-light); margin-right:0.6rem;"></i> <strong>Change User Roles</strong></li>
+                                <li><i class="fas fa-key" style="color:var(--primary-light); margin-right:0.6rem;"></i> <strong>View Registered Users Data</strong></li>
+                                <li><i class="fas fa-circle-plus" style="color:var(--primary-light); margin-right:0.6rem;"></i> Manage Inventory & Sales Reports</li>
+                                <li><i class="fas fa-circle-plus" style="color:var(--primary-light); margin-right:0.6rem;"></i> View Activity Logs</li>
                                 <li style="font-size:1.1rem; color:var(--danger); font-style:italic; margin-top:0.4rem;">*All sensitive actions require Superadmin Approval</li>
                             </ul>
                         </div>
@@ -565,15 +453,15 @@ function roleDisplay($role) {
 
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title"><i class="fas fa-users"></i> Active Accounts</div>
+                    <div class="card-title"><i class="fas fa-users"></i> Registered & Approved Users</div>
                 </div>
                 <div class="table-wrap">
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Name</th>
+                                <th>User Name</th>
                                 <th>Role</th>
-                                <th>Joined</th>
+                                <th>Joined Date</th>
                                 <th>Last Login</th>
                                 <th>Last Logout</th>
                                 <th style="text-align:right;">Actions</th>
@@ -582,11 +470,7 @@ function roleDisplay($role) {
                         <tbody>
                             <?php
                             try {
-                                if ($isSuperadmin) {
-                                    $stmt = $conn->prepare("SELECT id, first_name, last_name, role, status, created_at, last_login, last_logout FROM users WHERE status IN ('approved', 'blocked') AND role IN ('user', 'admin') ORDER BY role, last_name");
-                                } else {
-                                    $stmt = $conn->prepare("SELECT id, first_name, last_name, role, status, created_at, last_login, last_logout FROM users WHERE status IN ('approved', 'blocked') AND role IN ('user', 'admin') ORDER BY role, last_name");
-                                }
+                                $stmt = $conn->prepare("SELECT id, first_name, last_name, role, status, created_at, last_login, last_logout FROM users WHERE status IN ('approved', 'blocked', 'deactivated') AND role IN ('user', 'admin', 'superadmin') ORDER BY role, last_name");
                                 $stmt->execute();
                                 $currentActorId = (int)($_SESSION['user_id'] ?? 0);
                                 $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -616,6 +500,8 @@ function roleDisplay($role) {
                                     <span class="badge <?php echo $badge_cls; ?>"><?php echo $role_display; ?></span>
                                     <?php if ($u['status'] === 'blocked'): ?>
                                     <span class="badge badge-danger" style="margin-left:4px;">BLOCKED</span>
+                                    <?php elseif ($u['status'] === 'deactivated'): ?>
+                                    <span class="badge" style="margin-left:4px; font-weight:700; background:rgba(122,106,90,0.15); color:var(--muted); border:1px solid rgba(122,106,90,0.3);">DEACTIVATED (SOFT DELETE)</span>
                                     <?php endif; ?>
                                 </td>
                                 <td><?php echo $joined; ?></td>
@@ -624,18 +510,24 @@ function roleDisplay($role) {
                                 <td style="text-align:right;">
                                     <?php if (!$isSelf): ?>
                                     <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
-                                        <?php if ($can_block_user): ?>
-                                            <?php if ($u['status'] === 'blocked'): ?>
-                                            <button class="btn btn-success btn-sm" title="Unblock User" onclick="requestStatusUpdate(<?php echo $u['id']; ?>, 'unblock_user')"><i class="fas fa-unlock"></i></button>
-                                            <?php else: ?>
-                                            <button class="btn btn-ghost btn-sm" style="color:var(--danger);" title="Block User" onclick="requestStatusUpdate(<?php echo $u['id']; ?>, 'block_user')"><i class="fas fa-ban"></i></button>
-                                            <?php endif; ?>
+                                        <?php if ($u['status'] === 'blocked'): ?>
+                                        <button class="btn btn-success btn-sm" title="Unblock User" onclick="requestStatusUpdate(<?php echo $u['id']; ?>, 'unblock_user')"><i class="fas fa-unlock"></i></button>
+                                        <?php elseif ($u['status'] === 'deactivated'): ?>
+                                        <button class="btn btn-success btn-sm" title="Restore Account" onclick="requestStatusUpdate(<?php echo $u['id']; ?>, 'unblock_user')"><i class="fas fa-trash-can-arrow-up"></i> Restore</button>
+                                        <?php else: ?>
+                                        <button class="btn btn-ghost btn-sm" style="color:var(--danger);" title="Block User" onclick="requestStatusUpdate(<?php echo $u['id']; ?>, 'block_user')"><i class="fas fa-ban"></i></button>
                                         <?php endif; ?>
+                                        <?php if ($role === 'admin'): ?>
+                                        <button class="btn btn-ghost btn-sm" style="color:var(--primary-brown);" title="Manage Privileges" onclick="openPrivilegesModal(<?php echo $u['id']; ?>, '<?php echo htmlspecialchars($fullname, ENT_QUOTES); ?>')"><i class="fas fa-key"></i></button>
+                                        <?php endif; ?>
+                                        <button class="btn btn-ghost btn-sm" title="Update Role" onclick="requestRoleUpdate(<?php echo $u['id']; ?>, '<?php echo htmlspecialchars($fullname, ENT_QUOTES); ?>', '<?php echo htmlspecialchars($role, ENT_QUOTES); ?>')"><i class="fas fa-edit"></i></button>
+                                        <button class="btn btn-danger btn-sm" title="Delete User" onclick="requestDeleteUser(<?php echo $u['id']; ?>, '<?php echo htmlspecialchars($fullname, ENT_QUOTES); ?>')"><i class="fas fa-trash"></i></button>
                                     </div>
                                     <?php else: ?>
                                     <span style="font-size:0.85rem; color:var(--muted); font-style:italic;">No Actions Available</span>
                                     <?php endif; ?>
                                 </td>
+
                             </tr>
                             <?php 
                                     endforeach;
@@ -653,15 +545,13 @@ function roleDisplay($role) {
         <!-- ===== USERS APPROVAL ===== -->
         <div id="user-approval-section" class="section-view">
             <div class="page-hdr">
-                <div>
-                    <div class="page-hdr-title">User Approvals</div>
-                    <div class="page-hdr-sub">Manage registration requests and actions</div>
-                </div>
+                <div><div class="page-hdr-title">User Approvals</div><div class="page-hdr-sub">Review and process registration requests and administrative actions</div></div>
             </div>
 
+            <!-- ===== PENDING USER APPROVALS ===== -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title"><i class="fas fa-user-clock"></i> Pending Requests</div>
+                    <div class="card-title"><i class="fas fa-user-clock"></i> Pending User Approvals</div>
                 </div>
                 <div class="table-wrap">
                     <table class="data-table">
@@ -711,7 +601,6 @@ function roleDisplay($role) {
                 </div>
             </div>
 
-            <?php if ($isSuperadmin): ?>
             <!-- ===== PENDING ADMIN APPROVALS ===== -->
             <div class="card" style="margin-top: 2rem;">
                 <div class="card-header">
@@ -723,6 +612,7 @@ function roleDisplay($role) {
                             <tr>
                                 <th>Requested</th>
                                 <th>Requested By</th>
+                                <th>Role</th>
                                 <th>Target User</th>
                                 <th>Action Type</th>
                                 <th style="text-align:right;">Decision</th>
@@ -732,28 +622,29 @@ function roleDisplay($role) {
                             <?php
                             try {
                                 $stmt = $conn->prepare("
-                                    SELECT pa.id, pa.action_type, pa.created_at, 
-                                           ru.first_name AS req_f, ru.last_name AS req_l,
-                                           tu.first_name AS tgt_f, tu.last_name AS tgt_l
-                                    FROM pending_actions pa
-                                    LEFT JOIN users ru ON ru.id = pa.requested_by
-                                    LEFT JOIN users tu ON tu.id = pa.target_user_id
-                                    WHERE pa.status = 'pending'
+                                    SELECT pa.*, ru.first_name as rf, ru.last_name as rl, ru.role as rr, tu.first_name as tf, tu.last_name as tl 
+                                    FROM pending_actions pa 
+                                    JOIN users ru ON ru.id=pa.requested_by 
+                                    JOIN users tu ON tu.id=pa.target_user_id 
+                                    WHERE pa.status='pending'
                                     ORDER BY pa.created_at DESC
                                 ");
                                 $stmt->execute();
                                 $pas = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 if (empty($pas)) {
-                                    echo '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted);">No pending admin confirmations.</td></tr>';
+                                    echo '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted);">No pending admin confirmations.</td></tr>';
                                 } else {
                                     foreach ($pas as $pa):
-                                        $rName = trim($pa['req_f'].' '.$pa['req_l']) ?: 'Admin';
-                                        $tName = trim(($pa['tgt_f'] ?? '').' '.($pa['tgt_l'] ?? '')) ?: 'User';
-                                        $act = $pa['action_type'] === 'delete_user' ? 'Delete' : 'Role Update';
+                                        $rName = trim($pa['rf'].' '.$pa['rl']) ?: 'Admin';
+                                        $tName = trim($pa['tf'].' '.$pa['tl']) ?: 'User';
+                                        $roleInfo = roleDisplay($pa['rr'] ?? 'admin');
+                                        $act_map = ['delete_user'=>'Delete', 'update_role'=>'Role Change', 'block_user'=>'Block', 'unblock_user'=>'Unblock'];
+                                        $act = $act_map[$pa['action_type']] ?? 'Action';
                                 ?>
                                 <tr>
                                     <td><?php echo date('M j, H:i', strtotime($pa['created_at'])); ?></td>
                                     <td><strong><?php echo htmlspecialchars($rName); ?></strong></td>
+                                    <td><span class="badge <?php echo $roleInfo[1]; ?>"><?php echo $roleInfo[0]; ?></span></td>
                                     <td><?php echo htmlspecialchars($tName); ?></td>
                                     <td><span class="badge badge-admin"><?php echo $act; ?></span></td>
                                     <td style="text-align:right;">
@@ -764,59 +655,31 @@ function roleDisplay($role) {
                                     </td>
                                 </tr>
                                 <?php endforeach; }
-                            } catch (Exception $e) {}
+                            } catch (Exception $e) {
+                                echo '<tr><td colspan="6" style="text-align:center;padding:1rem;">Error loading confirmations</td></tr>';
+                            }
                             ?>
                         </tbody>
                     </table>
                 </div>
             </div>
-            <?php endif; ?>
         </div>
-        <?php endif; ?>
 
-        <!-- ===== REPORTS ===== -->
         <div id="reports-section" class="section-view">
-            <div class="page-hdr">
-                <div>
-                    <div class="page-hdr-title">Business Reports</div>
-                    <div class="page-hdr-sub">Analytics and performance overview</div>
-                </div>
-                <button class="btn btn-primary"><i class="fas fa-download"></i> Export PDF</button>
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;">
-                <div class="card">
-                    <div class="card-header"><div class="card-title">Revenue Trend</div></div>
-                    <div class="card-body"><div class="chart-placeholder">Chart coming soon</div></div>
-                </div>
-                <div class="card">
-                    <div class="card-header"><div class="card-title">Top Products</div></div>
-                    <div class="card-body"><div class="chart-placeholder">Chart coming soon</div></div>
-                </div>
-            </div>
+            <div class="page-hdr"><div><div class="page-hdr-title">System Reports</div></div></div>
+            <div class="coming-soon">Reports visualization coming soon.</div>
         </div>
 
-        <!-- ===== TRANSACTIONS ===== -->
-        <div id="transactions-section" class="section-view">
-            <div class="page-hdr">
-                <div>
-                    <div class="page-hdr-title">Transactions</div>
-                    <div class="page-hdr-sub">View all sales records</div>
-                </div>
-            </div>
-            <div class="coming-soon">Module under development</div>
-        </div>
+        <div id="transactions-section" class="section-view"><div class="coming-soon">Transactions coming soon.</div></div>
 
-        <!-- ===== ACTIVITY LOGS ===== -->
         <div id="logs-section" class="section-view">
             <div class="page-hdr">
                 <div>
-                    <div class="page-hdr-title">Activity Logs</div>
-                    <div class="page-hdr-sub">System activity history</div>
+                    <div class="page-hdr-title">System Activity Logs</div>
+                    <div class="page-hdr-sub">Comprehensive audit trail of all system actions</div>
                 </div>
                 <button class="btn btn-primary" onclick="exportLogs()">Export CSV</button>
             </div>
-
             <div class="filter-row" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: 300px 160px 160px 160px 160px auto; gap: 1rem; align-items: end; justify-content: start;">
                 <div class="search-box" style="margin: 0;">
                     <i class="fas fa-search"></i>
@@ -835,6 +698,7 @@ function roleDisplay($role) {
                     <label style="font-size: 0.8rem; font-weight: 600; color: var(--muted); margin-bottom: 0.4rem; display: block;">Actor Role</label>
                     <select id="roleFilter" class="filter-control">
                         <option value="">All Roles</option>
+                        <option value="superadmin">Superadmin</option>
                         <option value="admin">Admin</option>
                         <option value="user">User</option>
                     </select>
@@ -847,8 +711,8 @@ function roleDisplay($role) {
                     <label style="font-size: 0.8rem; font-weight: 600; color: var(--muted); margin-bottom: 0.4rem; display: block;">To</label>
                     <input type="date" id="dateToFilter" class="filter-control">
                 </div>
-                <input type="hidden" id="limitFilter" value="5">
                 <input type="hidden" id="actionTypeFilter" value="">
+                <input type="hidden" id="limitFilter" value="5">
                 <button type="button" class="btn btn-primary" onclick="loadLogs(1)" style="height: 48px;">Apply</button>
             </div>
 
@@ -892,34 +756,16 @@ function roleDisplay($role) {
                             </tr>
                         </thead>
                         <tbody id="logsTableBody">
-                            <!-- AJAX content here -->
+                            <tr><td colspan="5" style="text-align:center;padding:3rem;color:var(--muted);"><i class="fas fa-spinner fa-spin"></i> Loading logs...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <div id="logsPagination" style="display: none;">
-                <!-- AJAX pagination here -->
-            </div>
-        </div>
+            <div class="pagination" id="logsPagination" style="display:none;"></div>
         </div>
 
-        <!-- ===== SETTINGS ===== -->
-        <div id="settings-section" class="section-view">
-            <div class="coming-soon">Settings Module coming soon</div>
-        </div>
-
-    </div>
-</div>
-
-<!-- MODALS -->
-<div class="modal-overlay" id="detailsModal">
-    <div class="modal-box">
-        <div class="modal-head">
-            <h3>Activity Details</h3>
-            <button class="modal-close" onclick="closeModal('detailsModal')">✕</button>
-        </div>
-        <div class="modal-body"><table class="detail-table" id="detailsTable"></table></div>
+        <div id="settings-section" class="section-view"><div class="coming-soon">Settings coming soon.</div></div>
     </div>
 </div>
 
@@ -967,10 +813,10 @@ function roleDisplay($role) {
                             <label>System Role</label>
                             <select name="role" class="form-control" style="padding: 0.7rem 1rem;">
                                 <option value="user">User</option>
+                                <option value="admin">Admin</option>
                             </select>
-                            <p style="font-size: 0.8rem; color: var(--muted); margin-top: 0.5rem; font-style: italic;">Admins can only create staff-level accounts.</p>
                         </div>
-                        
+
                         <div style="background: rgba(108, 78, 49, 0.05); padding: 1.5rem; border-radius: 12px; border: 1px dashed var(--primary-brown); margin-top: 2rem;">
                             <div style="color: var(--primary-brown); font-weight: 700; margin-bottom: 0.5rem;">
                                 <i class="fas fa-info-circle"></i> Password Setup
@@ -991,11 +837,10 @@ function roleDisplay($role) {
     </div>
 </div>
 
-<div class="modal-overlay" id="addInventoryModal">
-    <!-- Basic inventory modal content -->
+<div class="modal-overlay" id="detailsModal">
     <div class="modal-box">
-        <div class="modal-head"><h3>Add Inventory</h3><button class="modal-close" onclick="closeModal('addInventoryModal')">✕</button></div>
-        <div class="modal-body">Development in progress...</div>
+        <div class="modal-head"><h3>Action Details</h3><button class="modal-close" onclick="closeModal('detailsModal')">✕</button></div>
+        <div class="modal-body"><table class="detail-table" id="detailsTable"></table></div>
     </div>
 </div>
 
@@ -1021,6 +866,17 @@ function roleDisplay($role) {
                         </div>
                         <div class="role-check"><i class="fas fa-check-circle"></i></div>
                     </div>
+
+                    <?php if ($isSuperadmin): ?>
+                    <div class="role-card" data-role="superadmin" onclick="selectRoleCard(this)">
+                        <div class="role-icon"><i class="fas fa-crown"></i></div>
+                        <div class="role-info">
+                            <div class="role-name">Superadmin</div>
+                            <div class="role-desc">Full system authority and administrative control.</div>
+                        </div>
+                        <div class="role-check"><i class="fas fa-check-circle"></i></div>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <input type="hidden" id="roleModalSelect" value="">
             </div>
@@ -1028,6 +884,49 @@ function roleDisplay($role) {
                 <button type="button" class="btn btn-ghost" onclick="closeModal('roleModal')">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="confirmRoleUpdate()">Update Role</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Confirmation Modal -->
+<div class="modal-overlay" id="deleteConfirmModal">
+    <div class="modal-box" style="max-width: 450px;">
+        <div class="modal-head">
+            <h3><i class="fas fa-user-times" style="color:var(--danger);"></i> Confirm Account Deletion</h3>
+            <button class="modal-close" onclick="closeModal('deleteConfirmModal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div style="background: rgba(192, 57, 43, 0.05); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; border-left: 4px solid var(--danger);">
+                <p id="deleteModalUser" style="font-weight: 600; color: var(--danger); margin-bottom: 0.3rem;"></p>
+                <p style="font-size: 0.9rem; color: var(--muted);">This action is permanent and will remove all user records from the system.</p>
+            </div>
+            
+            <form id="deleteUserForm" onsubmit="submitPermanentDeletion(event)">
+                <input type="hidden" id="deleteModalUserId" name="target_user_id">
+                <input type="hidden" name="action" value="delete_user">
+                
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Reason for Deletion <span style="color:var(--danger);">*</span></label>
+                    <textarea name="deletion_reason" class="form-control" placeholder="Please provide a specific reason for removing this account..." required style="min-height: 100px; resize: none;"></textarea>
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 2rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Supporting Document (Proof) <span style="color:var(--danger);">*</span></label>
+                    <div style="position: relative; border: 2px dashed rgba(139, 99, 71, 0.2); border-radius: 8px; padding: 1.5rem; text-align: center; transition: all 0.3s; background: rgba(255,255,255,0.5);" id="dropZone">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--primary-brown); margin-bottom: 0.5rem; display: block;"></i>
+                        <span style="font-size: 0.9rem; color: var(--muted);">Click or drag to upload file (PDF, JPG, PNG)</span>
+                        <input type="file" name="deletion_doc" required style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;" onchange="updateFileName(this)">
+                    </div>
+                    <div id="fileNameDisplay" style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--primary-brown); font-weight: 600; text-align: center;"></div>
+                </div>
+                
+                <div class="form-actions" style="justify-content: space-between; gap: 1rem;">
+                    <button type="button" class="btn btn-ghost" onclick="closeModal('deleteConfirmModal')" style="flex: 1;">Cancel</button>
+                    <button type="submit" class="btn btn-danger" id="deleteBtn" style="flex: 1.5; background: var(--danger); border-color: var(--danger);">
+                        <i class="fas fa-trash-alt"></i> Permanently Delete
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -1047,226 +946,67 @@ function roleDisplay($role) {
     </div>
 </div>
 
+<div class="modal-overlay" id="privilegesModal">
+    <div class="modal-box" style="max-width: 500px;">
+        <div class="modal-head">
+            <h3><i class="fas fa-shield-halved"></i> Admin Privileges</h3>
+            <button class="modal-close" onclick="closeModal('privilegesModal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <p id="privModalUser" style="margin-bottom:1.5rem; font-weight:600; color:var(--brown); font-size: 1.2rem;"></p>
+            <input type="hidden" id="privModalAdminId">
+            
+            <div style="display: grid; gap: 1.2rem; background: rgba(108, 78, 49, 0.05); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(108, 78, 49, 0.1);">
+                <label style="display: flex; align-items: center; gap: 1rem; cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: background 0.2s;" onmouseover="this.style.background='rgba(108, 78, 49, 0.1)'" onmouseout="this.style.background='transparent'">
+                    <input type="checkbox" id="priv_add_user" style="width: 20px; height: 20px; accent-color: var(--primary-brown);">
+                    <div>
+                        <div style="font-weight: 600; color: var(--primary-brown);">Add Users</div>
+                        <div style="font-size: 0.85rem; color: var(--muted);">Allow admin to create new user accounts</div>
+                    </div>
+                </label>
+                
+                <label style="display: flex; align-items: center; gap: 1rem; cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: background 0.2s;" onmouseover="this.style.background='rgba(108, 78, 49, 0.1)'" onmouseout="this.style.background='transparent'">
+                    <input type="checkbox" id="priv_block_user" style="width: 20px; height: 20px; accent-color: var(--primary-brown);">
+                    <div>
+                        <div style="font-weight: 600; color: var(--primary-brown);">Block Users</div>
+                        <div style="font-size: 0.85rem; color: var(--muted);">Allow admin to block or unblock users</div>
+                    </div>
+                </label>
+                
+
+                
+                <label style="display: flex; align-items: center; gap: 1rem; cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: background 0.2s;" onmouseover="this.style.background='rgba(108, 78, 49, 0.1)'" onmouseout="this.style.background='transparent'">
+                    <input type="checkbox" id="priv_view_users" style="width: 20px; height: 20px; accent-color: var(--primary-brown);">
+                    <div>
+                        <div style="font-weight: 600; color: var(--primary-brown);">View User Data</div>
+                        <div style="font-size: 0.85rem; color: var(--muted);">Allow admin to access the Registered Users module</div>
+                    </div>
+                </label>
+            </div>
+
+            <div class="form-actions" style="margin-top: 2rem;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('privilegesModal')">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveAdminPrivileges()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 let sidebarCollapsed = false;
-function toggleSidebar() {
-    sidebarCollapsed = !sidebarCollapsed;
-    document.getElementById('sidebar').classList.toggle('collapsed', sidebarCollapsed);
-    document.getElementById('mainContent').classList.toggle('expanded', sidebarCollapsed);
-    document.getElementById('toggleIcon').className = sidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
-}
+function toggleSidebar() { sidebarCollapsed = !sidebarCollapsed; document.getElementById('sidebar').classList.toggle('collapsed', sidebarCollapsed); document.getElementById('mainContent').classList.toggle('expanded', sidebarCollapsed); }
 function openMobileSidebar() { document.getElementById('sidebar').classList.add('mobile-open'); document.getElementById('sidebarBackdrop').classList.add('show'); }
 function closeMobileSidebar() { document.getElementById('sidebar').classList.remove('mobile-open'); document.getElementById('sidebarBackdrop').classList.remove('show'); }
 
 const pageNames = { overview:'Overview', inventory:'Inventory', user:'Users', 'user-approval':'Users Approval', reports:'Reports', transactions:'Transactions', logs:'Activity Logs', settings:'Settings' };
-
-// --- Custom Notification System ---
-function showToast(msg, type = 'success') {
-    const container = document.getElementById('toastContainer');
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle' };
-    const icon = icons[type] || 'fa-info-circle';
-    toast.innerHTML = `<i class="fas ${icon}"></i><div class="toast-msg">${msg}</div>`;
-    container.appendChild(toast);
-    setTimeout(() => { toast.classList.add('removing'); setTimeout(() => toast.remove(), 300); }, 4000);
-}
-
-// Override default Alert
-window.alert = function(msg) {
-    let type = 'success';
-    if(msg.toLowerCase().includes('error') || msg.toLowerCase().includes('failed') || msg.toLowerCase().includes('unauthorized')) type = 'error';
-    if(msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('requirements')) type = 'warning';
-    showToast(msg, type);
-};
-
-function showConfirm(title, message, icon = 'warning') {
-    return Swal.fire({
-        title: title,
-        text: message,
-        icon: icon,
-        showCancelButton: true,
-        confirmButtonColor: '#6C4E31',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Confirm',
-        cancelButtonText: 'Cancel'
-    }).then(res => res.isConfirmed);
-}
-
 function navigateTo(page, linkEl) {
     document.querySelectorAll('.section-view').forEach(s => s.classList.remove('active'));
-    const sec = document.getElementById(page + '-section');
-    if (sec) sec.classList.add('active');
+    document.getElementById(page + '-section').classList.add('active');
     document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-    if (linkEl) linkEl.classList.add('active');
-    else { const nl = document.getElementById('nl-' + page); if (nl) nl.classList.add('active'); }
-    document.getElementById('pageTitle').textContent = pageNames[page] || page;
-    if(page === 'logs') loadLogs(1);
+    if (linkEl) linkEl.classList.add('active'); else document.getElementById('nl-'+page).classList.add('active');
+    document.getElementById('pageTitle').textContent = pageNames[page];
     closeMobileSidebar();
-}
-
-function loadLogs(page = 1) {
-    const tbody = document.getElementById('logsTableBody');
-    const pagination = document.getElementById('logsPagination');
-    
-    const mod = document.getElementById('moduleFilter').value;
-    const action = document.getElementById('actionTypeFilter').value;
-    const dateFrom = document.getElementById('dateFromFilter').value;
-    const dateTo = document.getElementById('dateToFilter').value;
-    const role = document.getElementById('roleFilter').value;
-    const limit = document.getElementById('limitFilter').value;
-    const search = document.getElementById('searchLogs').value;
-
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:3rem;"><i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--primary-brown);"></i><br><span style="margin-top:1rem;display:inline-block;color:var(--muted);">Loading logs...</span></td></tr>';
-    pagination.style.display = 'none';
-
-    let params = new URLSearchParams({
-        page: page,
-        module: mod,
-        action_type: action,
-        date_from: dateFrom,
-        date_to: dateTo,
-        role: role,
-        limit: limit,
-        search: search
-    });
-
-    fetch(`actions/get_logs.php?${params.toString()}`)
-    .then(r => r.json())
-    .then(d => {
-        if (!d.logs || d.logs.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:3rem;color:var(--muted);">No logs found matching your criteria.</td></tr>';
-            return;
-        }
-        let html = '';
-        d.logs.forEach(log => {
-            const initials = log.user_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-            const summaryHtml = log.summary ? `<div style="font-size:0.85rem; color:#5d4037; margin-top:0.6rem; line-height:1.4; background:rgba(141,110,99,0.08); padding:0.6rem 1rem; border-radius:8px; border-left:3px solid var(--primary-brown);">${log.summary}</div>` : '';
-            const isCritical = log.act_class === 'badge-danger';
-            const rowStyle = isCritical ? 'background-color: rgba(192, 57, 43, 0.02);' : '';
-
-            html += `<tr style="cursor:pointer; transition:all 0.2s; ${rowStyle}" onclick="showDetails(${JSON.stringify(log).replace(/"/g, '&quot;')})" onmouseover="this.style.backgroundColor='rgba(108, 78, 49, 0.05)'" onmouseout="this.style.backgroundColor='${isCritical ? 'rgba(192, 57, 43, 0.02)' : 'transparent'}'">
-                    <td>
-                        <div style="font-weight:700; color:var(--primary-brown); font-size:1.1rem;">${log.time_ago}</div>
-                        <div style="font-size:0.85rem; color:var(--muted); margin-top:0.2rem;">${log.date_fmt} • ${log.time_fmt}</div>
-                    </td>
-                    <td>
-                        <div style="display:flex; align-items:center; gap:0.8rem;">
-                            <div style="width:36px; height:36px; background:var(--primary-brown); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1rem; font-weight:700; flex-shrink:0;">${initials}</div>
-                            <div>
-                                <div style="font-weight:600; font-size:1.1rem;">${log.user_name}</div>
-                                <div style="font-size:0.85rem; color:var(--muted);">ID: ${log.user_id || 'N/A'}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td><span class="badge ${log.role_class || ''}" style="padding:0.4rem 0.8rem; font-size:0.85rem;">${log.user_role || ''}</span></td>
-                    <td>
-                        <div style="display:flex; align-items:center; gap:0.6rem;">
-                            <span class="badge ${log.act_class}" style="padding:0.4rem 0.8rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.4rem;">
-                                <i class="fas ${log.act_icon}"></i> ${log.action}
-                            </span>
-                            <span style="font-size:0.85rem; color:var(--muted); font-weight:500; text-transform:uppercase; letter-spacing:0.5px;">[${log.module}]</span>
-                        </div>
-                        ${summaryHtml}
-                    </td>
-                    <td>
-                        <div style="font-size:0.9rem; color:var(--primary-brown); font-weight:600; margin-bottom:0.4rem;"><i class="fas fa-network-wired" style="opacity:0.6;"></i> ${log.ip_address}</div>
-                        <div style="display:flex; align-items:center; gap:0.6rem; opacity:0.8;">
-                            <i class="${log.ua_icon}" style="font-size:1.2rem; color:var(--primary-brown);"></i>
-                            <div>
-                                <div style="font-size:0.85rem; font-weight:600;">${log.platform}</div>
-                                <div style="font-size:0.75rem; color:var(--muted);">${log.browser}</div>
-                            </div>
-                        </div>
-                    </td>
-                </tr>`;
-        });
-        tbody.innerHTML = html;
-        if (d.total_pages > 1 || d.logs.length > 0) {
-            pagination.style.display = 'flex';
-            pagination.className = 'pagination-container';
-            
-            let pagHtml = '';
-            
-            // Rows per page
-            pagHtml += `<div class="pagination-rows">
-                            <span>Rows per page:</span>
-                            <select onchange="document.getElementById('limitFilter').value = this.value; loadLogs(1)">
-                                <option value="5" ${limit == 5 ? 'selected' : ''}>5</option>
-                                <option value="10" ${limit == 10 ? 'selected' : ''}>10</option>
-                                <option value="25" ${limit == 25 ? 'selected' : ''}>25</option>
-                                <option value="50" ${limit == 50 ? 'selected' : ''}>50</option>
-                                <option value="100" ${limit == 100 ? 'selected' : ''}>100</option>
-                            </select>
-                        </div>`;
-
-            pagHtml += `<div class="pagination-controls">`;
-
-            // First page button
-            pagHtml += `<button type="button" class="pag-btn" ${d.page <= 1 ? 'disabled' : ''} onclick="loadLogs(1)" title="First Page">
-                            <i class="fas fa-angle-double-left"></i>
-                        </button>`;
-            
-            // Previous button
-            pagHtml += `<button type="button" class="pag-btn" ${d.page <= 1 ? 'disabled' : ''} onclick="loadLogs(${d.page - 1})" title="Previous">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>`;
-            
-            // Page numbers
-            let startPage = Math.max(1, d.page - 1);
-            let endPage = Math.min(d.total_pages, startPage + 2);
-            if (endPage - startPage < 2) startPage = Math.max(1, endPage - 2);
-
-            if (startPage > 1) {
-                pagHtml += `<button type="button" class="pag-btn" onclick="loadLogs(1)">1</button>`;
-                if (startPage > 2) pagHtml += `<span class="pag-ellipsis">...</span>`;
-            }
-
-            for (let i = startPage; i <= endPage; i++) {
-                pagHtml += `<button type="button" class="pag-btn ${i === d.page ? 'active' : ''}" onclick="loadLogs(${i})">${i}</button>`;
-            }
-
-            if (endPage < d.total_pages) {
-                if (endPage < d.total_pages - 1) pagHtml += `<span class="pag-ellipsis">...</span>`;
-                pagHtml += `<button type="button" class="pag-btn" onclick="loadLogs(${d.total_pages})">${d.total_pages}</button>`;
-            }
-            
-            // Next button
-            pagHtml += `<button type="button" class="pag-btn" ${d.page >= d.total_pages ? 'disabled' : ''} onclick="loadLogs(${d.page + 1})" title="Next">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>`;
-
-            // Last page button
-            pagHtml += `<button type="button" class="pag-btn" ${d.page >= d.total_pages ? 'disabled' : ''} onclick="loadLogs(${d.total_pages})" title="Last Page">
-                            <i class="fas fa-angle-double-right"></i>
-                        </button>`;
-            
-            pagHtml += `</div>`;
-            
-            pagination.innerHTML = pagHtml;
-        } else {
-            pagination.style.display = 'none';
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:3rem;color:var(--danger);">Error loading logs.</td></tr>';
-    });
-}
-
-function exportLogs() {
-    const mod = document.getElementById('moduleFilter').value;
-    const df = document.getElementById('dateFromFilter').value;
-    const dt = document.getElementById('dateToFilter').value;
-    const search = document.getElementById('searchLogs').value;
-    const limit = document.getElementById('limitFilter').value;
-    window.location.href = `actions/export_logs.php?module=${mod}&date_from=${df}&date_to=${dt}&search=${encodeURIComponent(search)}&limit=${limit}`;
-}
-
-async function confirmLogout() {
-    if(await showConfirm('Logout', 'Are you sure you want to sign out?', 'question')) {
-        window.location.href = 'actions/log-out.php';
-    }
+    if (page === 'logs') loadLogs(1);
 }
 
 function openModal(id) { document.getElementById(id).classList.add('open'); }
@@ -1294,16 +1034,207 @@ function toggleGenericPass(id, icon) {
     }
 }
 
+
+
 function validateAdminPassword(pass) {
-    const checks = { length: pass.length >= 12 && pass.length <= 15, upper: /[A-Z]/.test(pass), lower: /[a-z]/.test(pass), number: /[0-9]/.test(pass), special: /[^A-Za-z0-9]/.test(pass) };
+    const checks = {
+        length: pass.length >= 12,
+        upper: /[A-Z]/.test(pass),
+        lower: /[a-z]/.test(pass),
+        number: /[0-9]/.test(pass),
+        special: /[^A-Za-z0-9]/.test(pass)
+    };
+
     Object.keys(checks).forEach(id => {
         const el = document.getElementById('adm-req-' + id);
         if (el) {
-            if (checks[id]) { el.classList.add('valid'); el.querySelector('i').className = 'fas fa-check-circle'; } 
-            else { el.classList.remove('valid'); el.querySelector('i').className = 'fas fa-circle'; }
+            if (checks[id]) {
+                el.classList.add('valid');
+                el.querySelector('i').className = 'fas fa-check-circle';
+            } else {
+                el.classList.remove('valid');
+                el.querySelector('i').className = 'fas fa-circle';
+            }
         }
     });
+
     return Object.values(checks).every(v => v === true);
+}
+
+function showLogDetails(log) {
+    let details = {};
+    try {
+        details = (typeof log.details === 'string') ? JSON.parse(log.details) : (log.details || {});
+    } catch(e) { details = { error: 'Invalid JSON', raw: log.details }; }
+    
+    let h = `
+        <tr><td>Timestamp</td><td>${new Date(log.created_at).toLocaleString()}</td></tr>
+        <tr><td>Operator</td><td><strong>${log.user_name}</strong> (ID: ${log.user_id})</td></tr>
+        <tr><td>Role</td><td>${log.user_role.toUpperCase()}</td></tr>
+        <tr><td>Action</td><td>${log.action}</td></tr>
+        <tr><td>Module</td><td>${log.module}</td></tr>
+        <tr><td>IP Address</td><td><code>${log.ip_address || 'N/A'}</code></td></tr>
+        <tr><td>User Agent</td><td style="font-size:1.1rem; color:var(--muted);">${log.user_agent}</td></tr>
+        <tr><td>Payload</td><td><code>${JSON.stringify(details, null, 2)}</code></td></tr>
+    `;
+    document.getElementById('detailsTable').innerHTML = h;
+    openModal('detailsModal');
+}
+
+let _logsCurrentPage = 1;
+
+function loadLogs(page) {
+    page = page || _logsCurrentPage;
+    _logsCurrentPage = page;
+
+    const mod    = document.getElementById('moduleFilter').value;
+    const action = document.getElementById('actionTypeFilter').value;
+    const df     = document.getElementById('dateFromFilter').value;
+    const dt     = document.getElementById('dateToFilter').value;
+    const role   = document.getElementById('roleFilter').value;
+    const limit  = document.getElementById('limitFilter').value;
+    const search = document.getElementById('searchLogs').value;
+
+    const tbody = document.getElementById('logsTableBody');
+    const pag   = document.getElementById('logsPagination');
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:3rem;color:var(--muted);"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>`;
+    pag.style.display = 'none';
+
+    const params = new URLSearchParams({ page, module: mod, action_type: action, date_from: df, date_to: dt, role, search, limit });
+    fetch('actions/get_logs.php?' + params.toString())
+    .then(r => r.json())
+    .then(data => {
+        const logs = data.logs || [];
+        if (!logs.length) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:3rem;color:var(--muted);">No logs found matching your criteria.</td></tr>`;
+            pag.style.display = 'none';
+            return;
+        }
+
+        const roleClassMap = { superadmin:'badge-admin', admin:'badge-admin', user:'badge-user', system:'badge-admin' };
+        const roleLabelMap = { superadmin:'Superadmin', admin:'Admin', user:'User', system:'System' };
+
+        tbody.innerHTML = logs.map(log => {
+            const roleClass = log.role_class || roleClassMap[log.user_role] || 'badge-admin';
+            const roleLabel = log.role_label || roleLabelMap[log.user_role] || log.user_role;
+            const initials = log.user_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            
+            let summaryHtml = log.summary ? `<div style="font-size:0.85rem; color:#5d4037; margin-top:0.6rem; line-height:1.4; background:rgba(141,110,99,0.08); padding:0.6rem 1rem; border-radius:8px; border-left:3px solid var(--primary-brown);">${log.summary}</div>` : '';
+            
+            const isCritical = log.act_class === 'badge-danger';
+            const rowStyle = isCritical ? 'background-color: rgba(192, 57, 43, 0.02);' : '';
+
+            return `<tr style="cursor:pointer; transition:all 0.2s; ${rowStyle}" onclick="showDetails(${JSON.stringify(log).replace(/"/g, '&quot;')})" onmouseover="this.style.backgroundColor='rgba(108, 78, 49, 0.05)'" onmouseout="this.style.backgroundColor='${isCritical ? 'rgba(192, 57, 43, 0.02)' : 'transparent'}'">
+                <td>
+                    <div style="font-weight:700; color:var(--primary-brown); font-size:1.1rem;">${log.time_ago}</div>
+                    <div style="font-size:0.85rem; color:var(--muted); margin-top:0.2rem;">${log.date_fmt} • ${log.time_fmt}</div>
+                </td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:0.8rem;">
+                        <div style="width:36px; height:36px; background:var(--primary-brown); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1rem; font-weight:700; flex-shrink:0;">${initials}</div>
+                        <div>
+                            <div style="font-weight:600; font-size:1.1rem;">${log.user_name}</div>
+                            <div style="font-size:0.85rem; color:var(--muted);">ID: ${log.user_id || 'N/A'}</div>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge ${roleClass}" style="padding:0.4rem 0.8rem; font-size:0.85rem;">${roleLabel}</span></td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:0.6rem;">
+                        <span class="badge ${log.act_class}" style="padding:0.4rem 0.8rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.4rem;">
+                            <i class="fas ${log.act_icon}"></i> ${log.action}
+                        </span>
+                        <span style="font-size:0.85rem; color:var(--muted); font-weight:500; text-transform:uppercase; letter-spacing:0.5px;">[${log.module}]</span>
+                    </div>
+                    ${summaryHtml}
+                </td>
+                <td>
+                    <div style="font-size:0.9rem; color:var(--primary-brown); font-weight:600; margin-bottom:0.4rem;"><i class="fas fa-network-wired" style="opacity:0.6;"></i> ${log.ip_address}</div>
+                    <div style="display:flex; align-items:center; gap:0.6rem; opacity:0.8;">
+                        <i class="${log.ua_icon}" style="font-size:1.2rem; color:var(--primary-brown);"></i>
+                        <div>
+                            <div style="font-size:0.85rem; font-weight:600;">${log.platform}</div>
+                            <div style="font-size:0.75rem; color:var(--muted);">${log.browser}</div>
+                        </div>
+                    </div>
+                </td>
+            </tr>`;
+        }).join('');
+
+        // Pagination
+        const total = data.total_pages || 1;
+        const cur   = data.page || page;
+        
+        if (data.total_pages > 1 || logs.length > 0) {
+            pag.style.display = 'flex';
+            pag.className = 'pagination-container';
+            
+            let pagHtml = '';
+            
+            // Rows per page
+            pagHtml += `<div class="pagination-rows">
+                            <span>Rows per page:</span>
+                            <select onchange="document.getElementById('limitFilter').value = this.value; loadLogs(1)">
+                                <option value="5" ${limit == 5 ? 'selected' : ''}>5</option>
+                                <option value="10" ${limit == 10 ? 'selected' : ''}>10</option>
+                                <option value="25" ${limit == 25 ? 'selected' : ''}>25</option>
+                                <option value="50" ${limit == 50 ? 'selected' : ''}>50</option>
+                                <option value="100" ${limit == 100 ? 'selected' : ''}>100</option>
+                            </select>
+                        </div>`;
+
+            pagHtml += `<div class="pagination-controls">`;
+
+            // First page button
+            pagHtml += `<button type="button" class="pag-btn" ${cur <= 1 ? 'disabled' : ''} onclick="loadLogs(1)" title="First Page">
+                            <i class="fas fa-angle-double-left"></i>
+                        </button>`;
+            
+            // Previous
+            pagHtml += `<button type="button" class="pag-btn" ${cur <= 1 ? 'disabled' : ''} onclick="loadLogs(${cur - 1})" title="Previous">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>`;
+            
+            // Page Numbers
+            let start = Math.max(1, cur - 1);
+            let end = Math.min(total, start + 2);
+            if (end - start < 2) start = Math.max(1, end - 2);
+
+            if (start > 1) {
+                pagHtml += `<button type="button" class="pag-btn" onclick="loadLogs(1)">1</button>`;
+                if (start > 2) pagHtml += `<span class="pag-ellipsis">...</span>`;
+            }
+
+            for (let i = start; i <= end; i++) {
+                const isActive = i === cur;
+                pagHtml += `<button type="button" class="pag-btn ${isActive ? 'active' : ''}" onclick="loadLogs(${i})">${i}</button>`;
+            }
+
+            if (end < total) {
+                if (end < total - 1) pagHtml += `<span class="pag-ellipsis">...</span>`;
+                pagHtml += `<button type="button" class="pag-btn" onclick="loadLogs(${total})">${total}</button>`;
+            }
+            
+            // Next
+            pagHtml += `<button type="button" class="pag-btn" ${cur >= total ? 'disabled' : ''} onclick="loadLogs(${cur + 1})" title="Next">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>`;
+
+            // Last page button
+            pagHtml += `<button type="button" class="pag-btn" ${cur >= total ? 'disabled' : ''} onclick="loadLogs(${total})" title="Last Page">
+                            <i class="fas fa-angle-double-right"></i>
+                        </button>`;
+            
+            pagHtml += `</div>`;
+            
+            pag.innerHTML = pagHtml;
+        } else {
+            pag.style.display = 'none';
+        }
+    })
+    .catch(() => {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--danger);">Failed to load logs. Please try again.</td></tr>`;
+    });
 }
 
 function showDetails(log) {
@@ -1320,7 +1251,7 @@ function showDetails(log) {
     } else {
         rows += `<dl style="display:grid; grid-template-columns:140px 1fr; gap:1rem 2rem; padding:0 1rem;">`;
         for (const [k, v] of Object.entries(details)) {
-            if (k === 'timestamp') continue; // Redundant
+            if (k === 'timestamp') continue;
             rows += `<dt style="font-weight:600; color:var(--muted); text-transform:capitalize;">${k.replace(/_/g, ' ')}</dt>
                      <dd style="color:var(--text); word-break:break-all;">${v}</dd>`;
         }
@@ -1336,9 +1267,19 @@ function showDetails(log) {
                 <dt style="font-weight:600; color:var(--muted);">Browser</dt><dd>${log.browser}</dd>
             </dl>`;
 
-    document.getElementById('detailsTable').innerHTML = rows; // We use the same container but it's not a table anymore
+    document.getElementById('detailsTable').innerHTML = rows;
     openModal('detailsModal');
 }
+
+function exportLogs() {
+    const mod    = document.getElementById('moduleFilter').value;
+    const action = document.getElementById('actionFilter').value;
+    const date   = document.getElementById('dateFilter').value;
+    const search = document.getElementById('searchLogs').value;
+    const params = new URLSearchParams({ module: mod, action, date, search });
+    window.location.href = 'actions/export_logs.php?' + params.toString();
+}
+
 
 function selectRoleCard(card) {
     document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
@@ -1372,46 +1313,127 @@ function confirmRoleUpdate() {
     fd.append('target_user_id',userId); 
     fd.append('new_role',next);
     
-    fetch('actions/manage_user.php',{method:'POST', body:fd }).then(r => r.json()).then(d => { 
-        Swal.fire({ icon: d.status, title: d.status === 'success' ? 'Success' : 'Error', text: d.message }).then(() => { if(d.status==='success') location.reload(); });
+    fetch('actions/manage_user.php',{method:'POST',body:fd})
+    .then(r=>r.json())
+    .then(d=>{
+        alert(d.message);
+        if(d.status==='success') location.reload();
     });
 }
 
-async function requestDeleteUser(userId, name) {
-    if(!await showConfirm('Delete User', `Are you sure you want to delete ${name}?`, 'fa-trash-alt')) return;
-    const fd = new FormData();
-    fd.append('action', 'delete_user'); fd.append('target_user_id', userId);
-    fetch('actions/manage_user.php', { method:'POST', body:fd }).then(r => r.json()).then(d => { 
-        Swal.fire({ icon: d.status, title: d.status === 'success' ? 'Success' : 'Error', text: d.message }).then(() => { if(d.status==='success') location.reload(); });
+// --- Custom Notification System ---
+function showToast(msg, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle' };
+    const icon = icons[type] || 'fa-info-circle';
+    
+    toast.innerHTML = `<i class="fas ${icon}"></i><div class="toast-msg">${msg}</div>`;
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.add('removing');
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+// Override default Alert
+window.alert = function(msg) {
+    let type = 'success';
+    if(msg.toLowerCase().includes('error') || msg.toLowerCase().includes('failed') || msg.toLowerCase().includes('unauthorized')) type = 'error';
+    if(msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('requirements')) type = 'warning';
+    showToast(msg, type);
+};
+
+let confirmPromiseResolve;
+function showConfirm(title, message, icon = 'fa-question-circle') {
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMessage').textContent = message;
+    document.querySelector('.confirm-icon i').className = `fas ${icon}`;
+    document.getElementById('confirmOverlay').classList.add('show');
+    
+    return new Promise((resolve) => {
+        confirmPromiseResolve = resolve;
+        document.getElementById('confirmBtnYes').onclick = () => handleConfirm(true);
+    });
+}
+
+function handleConfirm(value) {
+    document.getElementById('confirmOverlay').classList.remove('show');
+    if(confirmPromiseResolve) confirmPromiseResolve(value);
+}
+
+// Update existing functions to use async/await for confirmations
+function requestDeleteUser(userId, name) {
+    document.getElementById('deleteModalUser').textContent = "Deleting: " + name;
+    document.getElementById('deleteModalUserId').value = userId;
+    document.getElementById('deleteUserForm').reset();
+    document.getElementById('fileNameDisplay').textContent = "";
+    openModal('deleteConfirmModal');
+}
+
+function updateFileName(input) {
+    const display = document.getElementById('fileNameDisplay');
+    if (input.files && input.files[0]) {
+        display.textContent = "Selected: " + input.files[0].name;
+    } else {
+        display.textContent = "";
+    }
+}
+
+async function submitPermanentDeletion(e) {
+    e.preventDefault();
+    const btn = document.getElementById('deleteBtn');
+    const originalContent = btn.innerHTML;
+    
+    if(!await showConfirm('Final Confirmation', 'Are you ABSOLUTELY sure? This cannot be undone and will be recorded with your provided documents.', 'fa-exclamation-triangle')) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+    const formData = new FormData(e.target);
+    fetch('actions/manage_user.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            Swal.fire('Deleted', data.message, 'success').then(() => location.reload());
+        } else {
+            Swal.fire('Error', data.message, 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }
+    })
+    .catch(err => {
+        Swal.fire('Error', 'An unexpected error occurred', 'error');
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
     });
 }
 
 async function requestStatusUpdate(userId, action) {
     const isBlock = action === 'block_user';
     if(!await showConfirm(isBlock ? 'Block User' : 'Unblock User', `Are you sure you want to ${isBlock ? 'block' : 'unblock'} this user?`, isBlock ? 'fa-user-slash' : 'fa-user-check')) return;
-    const fd = new FormData();
-    fd.append('action', action); fd.append('target_user_id', userId);
-    fetch('actions/manage_user.php', { method:'POST', body:fd }).then(r => r.json()).then(d => { 
-        Swal.fire({ icon: d.status, title: d.status === 'success' ? 'Success' : 'Error', text: d.message }).then(() => { if(d.status==='success') location.reload(); });
-    });
+    const fd = new FormData(); fd.append('action', action); fd.append('target_user_id', userId);
+    fetch('actions/manage_user.php', { method:'POST', body:fd })
+    .then(r => r.json()).then(d => { alert(d.message); if(d.status==='success') location.reload(); });
 }
 
-async function processApproval(userId, action) {
-    if(!await showConfirm('Process Approval', 'Are you sure?', 'fa-check-circle')) return;
-    const fd = new FormData();
-    fd.append('action', action); fd.append('target_user_id', userId);
-    fetch('actions/approve_user.php', { method:'POST', body:fd }).then(r => r.json()).then(d => { 
-        Swal.fire({ icon: d.status, title: d.status === 'success' ? 'Success' : 'Error', text: d.message }).then(() => { if(d.status==='success') location.reload(); });
-    });
+async function processApproval(id, act) {
+    if(!await showConfirm('Confirm Approval', 'Do you want to process this user approval?', 'fa-check-circle')) return;
+    const fd = new FormData(); fd.append('id',id); fd.append('action',act);
+    fetch('actions/approve_user.php',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{alert(d.message);if(d.status==='success')location.reload();});
 }
 
 async function processPendingAction(id, dec) {
-    if(!await showConfirm('Confirm Request', 'Are you sure?', 'fa-shield-alt')) return;
-    const fd = new FormData();
-    fd.append('id', id); fd.append('decision', dec);
-    fetch('actions/approve_pending_action.php', { method:'POST', body:fd }).then(r => r.json()).then(d => { 
-        Swal.fire({ icon: d.status, title: d.status === 'success' ? 'Success' : 'Error', text: d.message }).then(() => { if(d.status==='success') location.reload(); });
-    });
+    const isApprove = dec === 'approve';
+    if(!await showConfirm(isApprove ? 'Confirm Action' : 'Cancel Action', `Are you sure you want to ${isApprove ? 'confirm' : 'cancel'} this admin request?`, isApprove ? 'fa-shield-alt' : 'fa-times-circle')) return;
+    const fd = new FormData(); fd.append('pending_action_id',id); fd.append('decision',dec);
+    fetch('actions/approve_pending_action.php',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{alert(d.message);if(d.status==='success')location.reload();});
 }
 
 function submitAddStaff(e) {
@@ -1447,31 +1469,83 @@ function submitAddStaff(e) {
         } else {
             btn.disabled = false;
             btn.innerHTML = originalText;
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: d.message
-            });
+            alert(d.message);
         }
     })
     .catch(err => {
         btn.disabled = false;
         btn.innerHTML = originalText;
-        Swal.fire({
-            icon: 'error',
-            title: 'Connection Error',
-            text: 'Failed to reach the server. Please check your connection.'
-        });
+        alert("An error occurred. Please try again.");
     });
 }
-
-document.addEventListener('DOMContentLoaded', () => {
+async function confirmLogout() { 
+    if(await showConfirm('Logout', 'Are you sure you want to sign out?', 'fa-sign-out-alt')) window.location.href='actions/log-out.php'; 
+}
+document.addEventListener('DOMContentLoaded', () => { 
     const params = new URLSearchParams(window.location.search);
     for (const [key] of params) { if (pageNames[key]) { navigateTo(key, null); return; } }
-    navigateTo('overview', null);
+    navigateTo('overview', null); 
+
+    // Add password listener
     const passInp = document.getElementById('admin_new_pass');
-    if(passInp) passInp.addEventListener('input', function() { validateAdminPassword(this.value); });
+    if(passInp) {
+        passInp.addEventListener('input', function() {
+            validateAdminPassword(this.value);
+        });
+    }
 });
+
+function openPrivilegesModal(adminId, fullName) {
+    document.getElementById('privModalUser').textContent = "Set privileges for: " + fullName;
+    document.getElementById('privModalAdminId').value = adminId;
+    
+    // Clear previous
+    document.getElementById('priv_add_user').checked = false;
+    document.getElementById('priv_block_user').checked = false;
+
+    document.getElementById('priv_view_users').checked = false;
+    
+    openModal('privilegesModal');
+    
+    // Fetch current privs
+    fetch(`actions/get_privileges.php?admin_id=${adminId}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('priv_add_user').checked = data.privileges.can_add_user;
+                document.getElementById('priv_block_user').checked = data.privileges.can_block_user;
+
+                document.getElementById('priv_view_users').checked = data.privileges.can_view_users;
+            }
+        });
+}
+
+function saveAdminPrivileges() {
+    const adminId = document.getElementById('privModalAdminId').value;
+    const formData = new FormData();
+    formData.append('admin_id', adminId);
+    if (document.getElementById('priv_add_user').checked) formData.append('can_add_user', '1');
+    if (document.getElementById('priv_block_user').checked) formData.append('can_block_user', '1');
+
+    if (document.getElementById('priv_view_users').checked) formData.append('can_view_users', '1');
+    
+    fetch('actions/update_privileges.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire('Success', data.message, 'success');
+            closeModal('privilegesModal');
+        } else {
+            Swal.fire('Error', data.message, 'error');
+        }
+    })
+    .catch(err => {
+        Swal.fire('Error', 'Something went wrong', 'error');
+    });
+}
 </script>
 </body>
 </html>

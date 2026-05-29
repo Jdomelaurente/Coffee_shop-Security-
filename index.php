@@ -1,397 +1,226 @@
 <?php
-session_start();  // Start the session
+session_start();
 
-// Redirect to appropriate dashboard if already logged in
 if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
-    if ($_SESSION['role'] === 'admin') {
+    if (($_SESSION['role'] ?? '') === 'superadmin') {
+        header("Location: superadmin_dash.php");
+    } elseif (($_SESSION['role'] ?? '') === 'admin') {
         header("Location: admin_dash.php");
-    } elseif (in_array($_SESSION['role'], ['staff', 'supervisor', 'manager'])) {
-        header("Location: staff_dash.php");
     } else {
         header("Location: pos.php");
     }
     exit;
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coffee Shop</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="css/style.css">
+    <title>Kalinga Coffee | Pinoy's Favorite</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="assets/css/home-formal.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 
-<!-- Header -->
-<header class="header">
-    <div id="menu-btn" class="fas fa-bars"></div>
-    <a href="#" style="margin-right: 60%; color: #FFEAC5;" class="logo"> coffee <i class="fas fa-mug-hot"></i> </a>
-    <nav class="navbar">
-        <a href="#about">About</a>
-        <a href="#menu">Menu</a>
-        <a href="#home">Home</a>
-    </nav>
-    <button class='bx bxs-user' onclick="openLoginModal()" style="width:auto;">Login</button>
-</header>
-
-<!-- Login Modal -->
-<div id="id01" class="modal">
-    <form id="login-form" class="modal-content animate" method="post">
-        <div class="imgcontainer">
-            <span id="close-modal-btn" class="close" title="Close Modal">&times;</span>
-        </div>
-        <h1 style="text-align: center; color: #FFEAC5; margin-top: 20px;">Log In</h1>
-        <div class="container">
-            <div class="error" id="timer-display" style="color: red; font-weight: bold; text-align: center;"></div>
-            
-            <label for="log_username">ID Number:</label>
-            <input type="text" maxlength="9" placeholder="xxxx-xxxx" name="log_username" id="log_username" required>
-            
-            <label for="log_password">Password:</label>
-            <input type="password" name="log_password" id="log_password" required>
-            
-            <!-- Container for checkbox and forgot password link -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0;">
-                <div style="display: flex; align-items: center;">
-                    <input type="checkbox" id="show_log_password" style="margin-right: 5px;">
-                    <label for="show_log_password" style="color: white; font-size: 0.85em;">Show Password</label>
-                </div>
-                <a href="forgot_password.php" style="color:red; font-size: 0.956rem; text-decoration: none;">Forgot Password?</a>
-            </div>
-
-            <button type="submit" id="login-button">Login</button>
-            <p>Don't have an account? <a href="form.php" style="color:white;">Sign Up</a></p>
-        </div>
-    </form>
-</div>
-
-<!-- Home Section -->
-<section class="home" id="home">
-    <div class="row">
-        <div class="content">
-            <h3 style="color: #603F26;">fresh coffee in the morning</h3>
-            <button class='button-74' onclick="openLoginModal()" style="width:auto;">Buy Now..</button>
-        </div>
-        <div class="image">
-            <img src="image/coffee1.png" class="main-home-image" alt="">
-        </div>
-    </div>
-    <div class="image-slider">
-        <img src="image/coffee1.png" alt="">
-        <img src="image/coffee2.png" alt="">
-        <img src="image/coffee3.png" alt="">
-    </div>
-</section>
-
-<!-- About Section -->
-<section class="about" id="about">
-    <h1 class="heading"> about us <span>why choose us</span> </h1>    
-    <div class="row">
-        <div class="image">
-            <img src="image/about-img.png" alt="">
-        </div>
-        <div class="content">
-            <h3 class="title">what's make our coffee special!</h3>
-            <p>Lorem ipsum, dolor sit amet consectetur adipisicing elit. Esse et commodi, ad, doloremque obcaecati maxime quam minima dolore mollitia saepe quos, debitis incidunt. Itaque possimus adipisci ipsam harum at autem.</p>
-            <a href="#" class="btn">read more</a>
-            <div class="icons-container">
-                <div class="icons">
-                    <img src="image/about-icon-1.png" alt="">
-                    <h3>quality coffee</h3>
-                </div>
-                <div class="icons">
-                    <img src="image/about-icon-2.png" alt="">
-                    <h3>our branches</h3>
-                </div>
-                <div class="icons">
-                    <img src="image/about-icon-3.png" alt="">
-                    <h3>free delivery</h3>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Menu Section -->
-<section class="menu" id="menu">
-    <h1 style="font-size: xxx-large; color: #603F26;text-align: center;">Our Best Seller </h1>
-    <div class="box-container">
-        <?php for ($i=1; $i<=6; $i++): ?>
-        <a href="#" class="box">
-            <img src="image/menu-<?php echo $i; ?>.png" alt="">
-            <div class="content">
-                <h3>our special coffee</h3>
-                <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Magnam, id.</p>
-                <span>$8.99</span>
+<header class="formal-header">
+    <div class="header-container">
+        <a href="#" class="formal-logo">
+            <div class="logo-text-wrapper">
+                <span class="logo-text">KALINGA COFFEE</span>
+                <span class="logo-subtext">MASANG KAPE</span>
             </div>
         </a>
-        <?php endfor; ?>
+        <nav class="formal-nav">
+            <a href="#home">Home</a>
+            <a href="#about">Our Story</a>
+            <a href="#menu">Favorites</a>
+            <a href="#contact">Contact</a>
+        </nav>
+        <div class="header-actions">
+            <button class="formal-btn-outline" onclick="window.location.href='login.php'" style="width: auto;">
+                <i class="fas fa-user"></i> Login
+            </button>
+            <div id="mobile-menu-btn" class="fas fa-bars"></div>
+        </div>
+    </div>
+</header>
+
+<section class="formal-hero" id="home">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+        <span class="hero-subtitle">SINCE 2024</span>
+        <h1 class="hero-title">Coffee for<br>Every Filipino</h1>
+        <p class="hero-desc">Start your morning with the aroma and taste of our local coffee. Affordable, delicious, and Proudly Filipino.</p>
+        <div class="hero-actions">
+            <button class="formal-btn-primary" onclick="window.location.href='login.php'" style="width: auto;">Order Now</button>
+            <a href="#menu" class="formal-link">View Menu <i class="fas fa-arrow-right"></i></a>
+        </div>
     </div>
 </section>
 
-<!-- Footer -->
-<section class="footer">
-    <div class="box-container">
-        <div class="box">
-            <h3>our branches</h3>
-            <a href="#"> <i class="fas fa-arrow-right"></i> Cabadbaran </a>
-            <a href="#"> <i class="fas fa-arrow-right"></i> Magallanes </a>
-            <a href="#"> <i class="fas fa-arrow-right"></i> RTR </a>
-            <a href="#"> <i class="fas fa-arrow-right"></i> Tubay </a>
+<section class="formal-features">
+    <div class="feature-grid">
+        <div class="feature-card">
+            <i class="fas fa-seedling"></i>
+            <h3>Local Beans</h3>
+            <p>Directly from our hardworking local farmers.</p>
         </div>
-        <div class="box">
-            <h3>quick links</h3>
-            <a href="#"> <i class="fas fa-arrow-right"></i> home </a>
-            <a href="#"> <i class="fas fa-arrow-right"></i> about </a>
-            <a href="#"> <i class="fas fa-arrow-right"></i> menu </a>
+        <div class="feature-card">
+            <i class="fas fa-wallet"></i>
+            <h3>Affordable Prices</h3>
+            <p>Quality blends that won't break the community's budget.</p>
         </div>
-        <div class="box">
-            <h3>contact info</h3>
-            <a href="#"> <i class="fas fa-phone"></i> 09272308675 </a>
-            <a href="#"> <i class="fas fa-envelope"></i> jdomelaurente@gmail.com </a>
+        <div class="feature-card">
+            <i class="fas fa-motorcycle"></i>
+            <h3>Fast Delivery</h3>
+            <p>Arrives hot and fresh straight to your doorstep.</p>
         </div>
-        <div class="box">
-            <h3>follow us</h3>
-            <a href="#"> <i class="fab fa-facebook-f"></i> facebook </a>
-            <a href="#"> <i class="fab fa-instagram"></i> instagram </a>
-        </div>
-    </div>
-    <div class="copyright">
-        <p>&copy; 2024 Your Company Name. All Rights Reserved.</p>
     </div>
 </section>
 
-<!-- Styles -->
-<style>
-    #login-button:disabled {
-        background-color: #cccccc;
-        color: #666666;
-        cursor: not-allowed;
-        opacity: 0.6;
-    }
-    
-    #login-form input:disabled {
-        background-color: #f5f5f5;
-        cursor: not-allowed;
-    }
-    
-    /* Prevent closing modal when locked */
-    .modal.locked .close {
-        pointer-events: none;
-        opacity: 0.3;
-        cursor: not-allowed;
-    }
-</style>
+<section class="formal-about" id="about">
+    <div class="about-grid">
+        <div class="about-image-wrapper">
+            <div class="image-frame">
+                <img src="assets/images/about-img.png" alt="Brewing coffee" class="about-img">
+            </div>
+            <div class="experience-badge">
+                <span class="years">100%</span>
+                <span class="text">Local<br>Made</span>
+            </div>
+        </div>
+        <div class="about-content">
+            <span class="section-tag">Our Story</span>
+            <h2 class="section-title">A Filipino Taste You'll Keep Coming Back To</h2>
+            <p class="section-desc">We believe that great coffee shouldn't be expensive. That's why we've worked hard to create coffee that fits the taste and budget of every Filipino.</p>
+            <p class="section-desc">From the rich soil of Kalinga to your cup, we ensure a smile in every sip.</p>
+            <a href="#" class="formal-btn-secondary">Get to Know Us</a>
+        </div>
+    </div>
+</section>
 
-<!-- Scripts -->
+<section class="formal-menu" id="menu">
+    <div class="menu-header">
+        <span class="section-tag">Aming Kape</span>
+        <h2 class="section-title text-center">Paborito ng Bayan</h2>
+        <p class="menu-subtitle">Subukan ang aming mga best-seller! Swak pang-agahan o pang-meryenda.</p>
+    </div>
+    
+    <div class="menu-grid">
+        <?php 
+        $coffees = [
+            ['name' => 'Classic Barako', 'price' => '₱65.00', 'desc' => 'Matapang at mabango mula sa lupain ng Batangas.'],
+            ['name' => 'Kape at Pandesal', 'price' => '₱45.00', 'desc' => 'Ang paboritong agahan ng bawat Pinoy.'],
+            ['name' => 'Rich Tsokolate', 'price' => '₱85.00', 'desc' => 'Gawa sa purong tablea, malapot at masarap.'],
+            ['name' => 'Iced Sagada', 'price' => '₱95.00', 'desc' => 'Malamig na kape mula sa matataas na bundok.'],
+            ['name' => 'Kapeng Matamis', 'price' => '₱75.00', 'desc' => 'May kasamang kondensada para sa tamis na hanap.'],
+            ['name' => 'Paborito ng Bayan', 'price' => '₱90.00', 'desc' => 'Ang aming best seller na swak sa panlasa mo.']
+        ];
+        
+        foreach($coffees as $index => $coffee): 
+            $i = ($index % 6) + 1;
+        ?>
+        <div class="menu-item">
+            <div class="menu-item-img-container">
+                <img src="assets/coffee/Kape-<?php echo $i; ?>-removebg-preview.png" alt="<?php echo $coffee['name']; ?>">
+                <div class="menu-price-tag"><?php echo $coffee['price']; ?></div>
+            </div>
+            <div class="menu-item-info">
+                <h3><?php echo $coffee['name']; ?></h3>
+                <p><?php echo $coffee['desc']; ?></p>
+                <button class="add-to-cart-btn"><i class="fas fa-plus"></i></button>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</section>
+
+<footer class="formal-footer" id="contact">
+    <div class="footer-top">
+        <div class="footer-brand">
+            <a href="#" class="formal-logo light">
+                <div class="logo-text-wrapper">
+                    <span class="logo-text">KALINGA COFFEE</span>
+                    <span class="logo-subtext">MASANG KAPE</span>
+                </div>
+            </a>
+            <p>Maligayang pagdating sa Kalinga Coffee! Dito, bawat higop ay parang yakap ng kaibigan.</p>
+            <div class="social-links">
+                <a href="#"><i class="fab fa-facebook-f"></i></a>
+                <a href="#"><i class="fab fa-instagram"></i></a>
+                <a href="#"><i class="fab fa-tiktok"></i></a>
+            </div>
+        </div>
+        <div class="footer-links-group">
+            <div class="footer-column">
+                <h4>Aming Lokasyon</h4>
+                <p>Cabadbaran</p>
+                <p>Magallanes</p>
+                <p>RTR</p>
+                <p>Tubay</p>
+            </div>
+            <div class="footer-column">
+                <h4>Quick Links</h4>
+                <a href="#home">Home</a>
+                <a href="#about">Our Story</a>
+                <a href="#menu">Menu</a>
+            </div>
+            <div class="footer-column">
+                <h4>Contact Us</h4>
+                <a href="tel:09272308675">0927-230-8675</a>
+                <a href="mailto:jdomelaurente@gmail.com">jdomelaurente@gmail.com</a>
+            </div>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; <?php echo date('Y'); ?> Kalinga Coffee. All Rights Reserved.</p>
+    </div>
+</footer>
+
+
 <script>
-    let countdownInterval = null;
-    let isLocked = false;
-
-    // Show/hide password
-    document.getElementById('show_log_password').addEventListener('change', function() {
-        document.getElementById('log_password').type = this.checked ? 'text' : 'password';
-    });
-
-    // Function to open login modal and check lock status
-    function openLoginModal() {
-        document.getElementById('id01').style.display = 'block';
-        checkLockStatus();
-    }
-
-    // Prevent closing modal when locked
-    document.getElementById('close-modal-btn').addEventListener('click', function(e) {
-        if (isLocked) {
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
             e.preventDefault();
-            e.stopPropagation();
-            Swal.fire({
-                icon: 'warning',
-                title: 'Account Locked',
-                text: 'Cannot close while account is locked. Please wait for the timer to expire.',
-                confirmButtonText: 'OK'
+            document.querySelector(this.getAttribute('href')).scrollIntoView({
+                behavior: 'smooth'
             });
-            return false;
-        }
-        document.getElementById('id01').style.display = 'none';
+        });
     });
 
-    // Also prevent clicking outside to close when locked
-    window.onclick = function(event) {
-        const modal = document.getElementById('id01');
-        if (event.target == modal && !isLocked) {
-            modal.style.display = "none";
-        } else if (event.target == modal && isLocked) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Account Locked',
-                text: 'Cannot close while account is locked. Please wait for the timer to expire.',
-                confirmButtonText: 'OK'
-            });
-        }
-    }
-
-    // Prevent page refresh/reload when locked
-    window.addEventListener('beforeunload', function(e) {
-        if (isLocked) {
-            e.preventDefault();
-            e.returnValue = ''; // Required for Chrome
-            return 'Account is locked. Refreshing will not bypass the lockout timer.';
+    const header = document.querySelector('.formal-header');
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 50) {
+            header.classList.add('scrolled');
+        } else {
+            header.classList.remove('scrolled');
         }
     });
 
-    // Prevent F5, Ctrl+R, Cmd+R when locked
-    document.addEventListener('keydown', function(e) {
-        if (isLocked) {
-            // F5 or Ctrl+R or Cmd+R
-            if (e.key === 'F5' || (e.ctrlKey && e.key === 'r') || (e.metaKey && e.key === 'r')) {
-                e.preventDefault();
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Refresh Disabled',
-                    text: 'Cannot refresh page while account is locked. Please wait for the timer to expire.',
-                    confirmButtonText: 'OK'
-                });
-                return false;
-            }
+    // Mobile menu toggle
+    document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+        const nav = document.querySelector('.formal-nav');
+        if(nav.style.display === 'flex') {
+            nav.style.display = 'none';
+        } else {
+            nav.style.display = 'flex';
+            nav.style.flexDirection = 'column';
+            nav.style.position = 'absolute';
+            nav.style.top = '100%';
+            nav.style.left = '0';
+            nav.style.right = '0';
+            nav.style.background = '#FFFFFF';
+            nav.style.padding = '20px';
+            nav.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
         }
-    });
-
-    // Function to start countdown timer
-    function startCountdown(seconds) {
-        const loginButton = document.getElementById('login-button');
-        const timerDisplay = document.getElementById('timer-display');
-        const modal = document.getElementById('id01');
-        const usernameInput = document.getElementById('log_username');
-        const passwordInput = document.getElementById('log_password');
-        
-        // Set locked state
-        isLocked = true;
-        modal.classList.add('locked');
-        
-        // Disable button, inputs and form
-        loginButton.disabled = true;
-        loginButton.textContent = 'LOCKED';
-        usernameInput.disabled = true;
-        passwordInput.disabled = true;
-        
-        let remainingTime = seconds;
-        
-        // Clear any existing interval
-        if (countdownInterval) {
-            clearInterval(countdownInterval);
-        }
-        
-        // Update display immediately
-        timerDisplay.textContent = `Account locked. Try again in ${remainingTime} seconds.`;
-        
-        // Start countdown
-        countdownInterval = setInterval(() => {
-            remainingTime--;
-            
-            if (remainingTime > 0) {
-                timerDisplay.textContent = `Account locked. Try again in ${remainingTime} seconds.`;
-            } else {
-                // Timer expired - unlock
-                clearInterval(countdownInterval);
-                loginButton.disabled = false;
-                loginButton.textContent = 'Login';
-                usernameInput.disabled = false;
-                passwordInput.disabled = false;
-                timerDisplay.textContent = '';
-                isLocked = false;
-                modal.classList.remove('locked');
-                
-                // Also clear the session lock on server
-                fetch('clear_lock.php')
-                    .catch(err => console.error('Error clearing lock:', err));
-            }
-        }, 1000);
-    }
-
-    // Function to check lock status
-    function checkLockStatus() {
-        fetch('check_lock.php')
-            .then(response => response.json())
-            .then(data => {
-                if (data.locked && data.remainingTime > 0) {
-                    startCountdown(data.remainingTime);
-                }
-            })
-            .catch(err => console.error('Error checking lock status:', err));
-    }
-
-    // AJAX login
-    document.getElementById('login-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const loginButton = document.getElementById('login-button');
-        
-        // Prevent submission if locked
-        if (loginButton.disabled) {
-            return;
-        }
-        
-        const form = document.getElementById('login-form');
-        const formData = new FormData(form);
-
-        fetch('login.php', {
-            method: 'POST',
-            body: formData,
-        })
-        .then(response => response.json())
-        .then(data => {
-            const timerDisplay = document.getElementById('timer-display');
-
-            if (data.status === 'success') {
-                // Clear any countdown on success
-                if (countdownInterval) {
-                    clearInterval(countdownInterval);
-                }
-                
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success!',
-                    text: data.message,
-                    confirmButtonText: 'OK'
-                }).then(() => {
-                    if (data.role === 'admin') {
-                        window.location.href = 'admin_dash.php';
-                    } else if (['staff', 'supervisor', 'manager'].includes(data.role)) {
-                        window.location.href = 'staff_dash.php';
-                    } else {
-                        window.location.href = 'pos.php';
-                    }
-                });
-            } else if (data.status === 'reset_alert') {
-                timerDisplay.innerHTML = data.message + ' <a href="forgot_password.php" style="color:#FFEAC5;">Reset Here</a>';
-            } else if (data.status === 'locked') {
-                // Start countdown timer
-                startCountdown(data.lockTime);
-            } else {
-                timerDisplay.textContent = data.message;
-            }
-        })
-        .catch(err => console.error('Error:', err));
-    });
-
-    // Check if already locked on page load and auto-show modal if locked
-    window.addEventListener('DOMContentLoaded', function() {
-        fetch('check_lock.php')
-            .then(response => response.json())
-            .then(data => {
-                if (data.locked && data.remainingTime > 0) {
-                    // Auto-show modal if locked
-                    document.getElementById('id01').style.display = 'block';
-                    startCountdown(data.remainingTime);
-                }
-            })
-            .catch(err => console.error('Error checking lock status:', err));
     });
 </script>
-
 </body>
 </html>
