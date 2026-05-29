@@ -1,9 +1,11 @@
--- Refined Database Schema for Coffee Shop (PostgreSQL)
+-- Refined Database Schema for Coffee Shop (MySQL)
+
+SET FOREIGN_KEY_CHECKS = 0;
 
 -- Users Table
-DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS users;
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     id_number VARCHAR(20) UNIQUE NOT NULL,
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
@@ -27,31 +29,32 @@ CREATE TABLE users (
     answer2 TEXT,
     question3 TEXT,
     answer3 TEXT,
-    role VARCHAR(20) DEFAULT 'user' CHECK (role IN ('user', 'admin', 'superadmin')),
+    role VARCHAR(20) DEFAULT 'user',
     status VARCHAR(20) DEFAULT 'pending',
-    last_login TIMESTAMP,
-    last_logout TIMESTAMP,
+    last_login TIMESTAMP NULL,
+    last_logout TIMESTAMP NULL,
     last_ip VARCHAR(45),
     last_agent TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- User Sessions Table (Tracks detailed history of each login)
-DROP TABLE IF EXISTS user_sessions CASCADE;
+DROP TABLE IF EXISTS user_sessions;
 CREATE TABLE user_sessions (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
     login_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    logout_at TIMESTAMP,
+    logout_at TIMESTAMP NULL,
     ip_address VARCHAR(45),
     user_agent TEXT,
-    is_active BOOLEAN DEFAULT TRUE
+    is_active BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Activity Logs Table
-DROP TABLE IF EXISTS activity_logs CASCADE;
+DROP TABLE IF EXISTS activity_logs;
 CREATE TABLE activity_logs (
-    id SERIAL PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     user_id VARCHAR(20),
     user_name VARCHAR(100),
     user_role VARCHAR(20),
@@ -59,29 +62,31 @@ CREATE TABLE activity_logs (
     module VARCHAR(50),
     ip_address VARCHAR(45),
     user_agent TEXT,
-    details JSONB,
+    details JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Pending actions that require superadmin confirmation
-DROP TABLE IF EXISTS pending_actions CASCADE;
+DROP TABLE IF EXISTS pending_actions;
 CREATE TABLE pending_actions (
-    id SERIAL PRIMARY KEY,
-    target_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    action_type VARCHAR(20) NOT NULL CHECK (action_type IN ('update_role', 'delete_user', 'block_user', 'unblock_user')),
-    new_data JSONB,
-    requested_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    target_user_id INTEGER NOT NULL,
+    action_type VARCHAR(20) NOT NULL,
+    new_data JSON,
+    requested_by INTEGER,
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Menu Items Table
-DROP TABLE IF EXISTS menu_items CASCADE;
+DROP TABLE IF EXISTS menu_items;
 CREATE TABLE menu_items (
-    id SERIAL PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
-    price NUMERIC(10, 2) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
     category VARCHAR(50),
     stock_quantity INTEGER DEFAULT 0,
     image_url TEXT,
@@ -101,3 +106,5 @@ INSERT INTO menu_items (name, description, price, category, stock_quantity) VALU
 ('Iced Americano', 'Espresso over ice', 110.00, 'Cold Drinks', 100),
 ('Mocha', 'Chocolate espresso blend', 145.00, 'Coffee', 100),
 ('Cheesecake', 'Classic New York style', 165.00, 'Dessert', 20);
+
+SET FOREIGN_KEY_CHECKS = 1;

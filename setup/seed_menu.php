@@ -2,7 +2,7 @@
 require_once dirname(__FILE__) . '/../includes/db.php';
 
 try {
-    $conn->exec("TRUNCATE TABLE menu_items RESTART IDENTITY CASCADE");
+    $conn->exec("TRUNCATE TABLE menu_items");
 
     $menu_items = [
         ['Classic Barako', 'Matapang at mabango mula sa Batangas', 65.00, 'Coffee'],

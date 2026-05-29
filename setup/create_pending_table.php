@@ -2,13 +2,15 @@
 require_once '../includes/db.php';
 $sql = "
 CREATE TABLE IF NOT EXISTS pending_actions (
-    id SERIAL PRIMARY KEY,
-    target_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    action_type VARCHAR(20) NOT NULL CHECK (action_type IN ('update_role', 'delete_user')),
-    new_data JSONB,
-    requested_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    target_user_id INTEGER NOT NULL,
+    action_type VARCHAR(20) NOT NULL,
+    new_data JSON,
+    requested_by INTEGER,
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE SET NULL
 );
 ";
 try {

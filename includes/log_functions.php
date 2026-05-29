@@ -98,17 +98,17 @@ function getActivityLogs($filters = [], $limit = 10, $offset = 0) {
             $params['module'] = $filters['module'];
         }
         if (!empty($filters['action'])) {
-            $where[] = "action ILIKE :action";
+            $where[] = "action LIKE :action";
             $params['action'] = "%{$filters['action']}%";
         }
-        // action_keyword: a comma-separated set of ILIKE patterns joined with OR
+        // action_keyword: a comma-separated set of LIKE patterns joined with OR
         if (!empty($filters['action_keyword'])) {
             $keywords = array_filter(array_map('trim', explode(',', $filters['action_keyword'])));
             if ($keywords) {
                 $kClauses = [];
                 foreach ($keywords as $i => $kw) {
                     $key = "akw_$i";
-                    $kClauses[] = "action ILIKE :$key";
+                    $kClauses[] = "action LIKE :$key";
                     $params[$key] = "%$kw%";
                 }
                 $where[] = '(' . implode(' OR ', $kClauses) . ')';
@@ -119,7 +119,7 @@ function getActivityLogs($filters = [], $limit = 10, $offset = 0) {
             $searchClauses = [];
             foreach ($searchTerms as $i => $term) {
                 $key = "search_$i";
-                $searchClauses[] = "(user_name ILIKE :$key OR action ILIKE :$key OR user_id ILIKE :$key OR details::text ILIKE :$key OR module ILIKE :$key)";
+                $searchClauses[] = "(user_name LIKE :$key OR action LIKE :$key OR user_id LIKE :$key OR CAST(details AS CHAR) LIKE :$key OR module LIKE :$key)";
                 $params[$key] = "%$term%";
             }
             if (!empty($searchClauses)) {
@@ -234,7 +234,7 @@ function exportLogsToCSV($filters = []) {
             $params['module'] = $filters['module'];
         }
         if (!empty($filters['action'])) {
-            $where[] = "action ILIKE :action";
+            $where[] = "action LIKE :action";
             $params['action'] = "%{$filters['action']}%";
         }
         if (!empty($filters['search'])) {
@@ -242,7 +242,7 @@ function exportLogsToCSV($filters = []) {
             $searchClauses = [];
             foreach ($searchTerms as $i => $term) {
                 $key = "search_$i";
-                $searchClauses[] = "(user_name ILIKE :$key OR action ILIKE :$key OR user_id ILIKE :$key OR details::text ILIKE :$key OR module ILIKE :$key)";
+                $searchClauses[] = "(user_name LIKE :$key OR action LIKE :$key OR user_id LIKE :$key OR CAST(details AS CHAR) LIKE :$key OR module LIKE :$key)";
                 $params[$key] = "%$term%";
             }
             if (!empty($searchClauses)) {

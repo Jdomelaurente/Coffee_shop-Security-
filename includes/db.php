@@ -1,12 +1,12 @@
 <?php
 $host = "localhost";       // Usually localhost
-$port = "5432";            // Default PostgreSQL port
+$port = "3306";            // Default MySQL port
 $dbname = "coffee_shop";   
-$user = "postgres";        // Your PostgreSQL username
-$password = "postgres";
+$user = "root";            // Default MySQL username
+$password = "";            // Default MySQL password (blank locally for XAMPP/WampServer)
 
 try {
-    $conn = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $user, $password);
+    $conn = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", $user, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
     echo "Connection failed: " . $e->getMessage();

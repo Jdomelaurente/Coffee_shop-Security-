@@ -1,12 +1,12 @@
 <?php
 require_once dirname(__FILE__) . '/../includes/db.php';
-
 try {
     $conn->beginTransaction();
+    $conn->exec("SET FOREIGN_KEY_CHECKS = 0;");
 
     $conn->exec("
         CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
+            id INT AUTO_INCREMENT PRIMARY KEY,
             id_number VARCHAR(20) UNIQUE NOT NULL,
             username VARCHAR(50) UNIQUE NOT NULL,
             first_name VARCHAR(50) NOT NULL,
@@ -31,7 +31,7 @@ try {
             answer2 TEXT,
             question3 TEXT,
             answer3 TEXT,
-            role VARCHAR(20) DEFAULT 'user' CHECK (role IN ('user', 'admin', 'superadmin')),
+            role VARCHAR(20) DEFAULT 'user',
             status VARCHAR(20) DEFAULT 'pending',
             last_login TIMESTAMP NULL,
             last_logout TIMESTAMP NULL,
@@ -41,7 +41,7 @@ try {
 
     $conn->exec("
         CREATE TABLE IF NOT EXISTS activity_logs (
-            id SERIAL PRIMARY KEY,
+            id INT AUTO_INCREMENT PRIMARY KEY,
             user_id VARCHAR(20),
             user_name VARCHAR(100),
             user_role VARCHAR(20),
@@ -49,29 +49,31 @@ try {
             module VARCHAR(50),
             ip_address VARCHAR(45),
             user_agent TEXT,
-            details JSONB,
+            details JSON,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ");
 
     $conn->exec("
         CREATE TABLE IF NOT EXISTS pending_actions (
-            id SERIAL PRIMARY KEY,
-            target_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            action_type VARCHAR(20) NOT NULL CHECK (action_type IN ('update_role', 'delete_user')),
-            new_data JSONB,
-            requested_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-            status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            target_user_id INTEGER NOT NULL,
+            action_type VARCHAR(20) NOT NULL,
+            new_data JSON,
+            requested_by INTEGER,
+            status VARCHAR(20) DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE SET NULL
         )
     ");
 
     $conn->exec("
         CREATE TABLE IF NOT EXISTS menu_items (
-            id SERIAL PRIMARY KEY,
+            id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
             description TEXT,
-            price NUMERIC(10, 2) NOT NULL,
+            price DECIMAL(10, 2) NOT NULL,
             category VARCHAR(50),
             stock_quantity INTEGER DEFAULT 0,
             image_url TEXT,
@@ -79,6 +81,8 @@ try {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ");
+
+    $conn->exec("SET FOREIGN_KEY_CHECKS = 1;");
 
     $conn->commit();
     echo "Database initialized successfully.";
